@@ -8,7 +8,7 @@ Link for download:
 
 4. Clone workshop to aws machine by command: 
     cd ~/
-    git clone https://github.com/praparn/kubernetes_202005.git
+    git clone https://github.com/praparn/kubernetes_202104.git
 
 5. Enable module for IPVS by command:
 	sudo su -
@@ -25,7 +25,7 @@ Link for download:
 
 6. Initial kubernetes by command:
     sudo su -
-    kubeadm init --config /home/ubuntu/kubernetes_202005/WorkShop_1.1_Install_Kubernetes/kubeadm-init-basic.yaml
+    kubeadm init --config /home/ubuntu/kubernetes_202104/WorkShop_1.1_Install_Kubernetes/kubeadm-init-basic.yaml
     exit
 
 7. Setup credential for regular user by command:
@@ -69,7 +69,7 @@ Link for download:
     kubectl delete pods/webtest
     kubectl delete svc/webtest
 
-15. Now all workshop is on "/home/ubuntu/kubernetes_202005"
+15. Now all workshop is on "/home/ubuntu/kubernetes_202104"
 
 
 *Remark: In case you need to reinitial all this lab again please kindly following command below (*Warnning: This will reset all lab that you had been operate before)
