@@ -26,21 +26,21 @@ Create Job for Monitor System via LINE:
         - name: SH_OS
           value: "Y"											==> Input "Y"
         - name: TOKEN
-          value: "EIeqyillzkzpaCo1ROrebZTcGbIyzDZHpOjcdd0t6CX"	==> Input LINE TOKEN
+          value: "pKCqcUWGmCpEoNBDNZxsnt5OT4kP41F2BK3QsdSdMDw"	==> Input LINE TOKEN
 
 4. Create Job by command:
 	kubectl create -f job.yml 
 	kubectl get jobs -o wide
 	kubectl get pods -o wide
+  kubectl describe jobs/linenotify
 
   ****After Complete Pods will gone. We can view all complete by command***
   kubectl get pods -o wide
 
-  ****After 30 Second. Job will get delete from kubernetes by feature: TTLAfterFinished
-  kubectl get pods -o wide
 
-5. Check Detail of Job by command:
-	kubectl describe jobs/linenotify
+5. Check Detail of Posds by command:
+	  ****After 30 Second. Job will get delete from kubernetes by feature: TTLAfterFinished
+  kubectl get pods -o wide
 
 6. Monitor Result on LINE Application: (5 Min)
 
@@ -57,7 +57,7 @@ Create Job for Monitor System via LINE:
         - name: SH_OS
           value: "Y"											==> Input "N"
         - name: TOKEN
-          value: "EIeqyillzkzpaCo1ROrebZTcGbIyzDZHpOjcdd0t6CX"	==> Input LINE TOKEN
+          value: "pKCqcUWGmCpEoNBDNZxsnt5OT4kP41F2BK3QsdSdMDw"	==> Input LINE TOKEN
 
 8. Create Job by command: (Monitor 5 - 6 min)
 	kubectl create -f job_notify_cron.yml 
