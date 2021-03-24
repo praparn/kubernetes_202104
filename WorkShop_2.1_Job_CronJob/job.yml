@@ -30,5 +30,5 @@ spec:
         - name: SH_OS
           value: "Y"
         - name: TOKEN
-          value: "EIeqyillzkzpaCo1ROrebZTcGbIyzDZHpOjcdd0t6CX"
+          value: "pKCqcUWGmCpEoNBDNZxsnt5OT4kP41F2BK3QsdSdMDw"
       restartPolicy: Never
