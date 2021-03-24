@@ -15,27 +15,13 @@ Link for download:
     cd ~/
     git clone https://github.com/praparn/kubernetes_202104.git
 
-5. Enable module for IPVS by command:
-	sudo su -
-	cp /etc/modules /etc/modules_backup
-	echo "" > /etc/modules
-    echo "ip_vs" >> /etc/modules
-    echo "ip_vs_rr" >> /etc/modules
-    echo "ip_vs_wrr" >> /etc/modules
-    echo "ip_vs_sh" >> /etc/modules
-    echo "nf_conntrack_ipv4" >> /etc/modules
-    echo "overlay" >> /etc/modules
-    echo "br_netfilter" >> /etc/modules
-	reboot
-    *After reboot check modprobe*
+5. Check module for IPVS by command:
     sudo lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 
 6. Initial kubernetes by command:
     sudo su -
-    echo '1' > /proc/sys/net/ipv4/ip_forward
     kubeadm config images pull
-    kubeadm init --pod-network-cidr=192.168.0.0/16
-    kubeadm init --config /home/ubuntu/kubernetes_202104/WorkShop_1.1_Install_Kubernetes/kubeadm-init-basic.yaml
+    kubeadm init --config /home/ubuntu/kubernetes_202104/WorkShop_1.1_Install_Kubernetes/kubeadm-init-basic-containerd.yaml
     exit
 
 7. Setup credential for regular user by command:
@@ -46,8 +32,7 @@ Link for download:
 	kubectl taint nodes --all node-role.kubernetes.io/master-
 
 8. Install network component by command:
-    kubectl create -f https://docs.projectcalico.org/manifests/tigera-operator.yaml
-    kubectl create -f https://docs.projectcalico.org/manifests/custom-resources.yaml
+    kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
     watch kubectl get pods --all-namespaces
 
 9. Check IPVS mode on kube-proxy by command:

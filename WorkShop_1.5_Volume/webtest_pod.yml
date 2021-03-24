@@ -21,4 +21,4 @@ spec:
   volumes:
     - name: voldocker
       hostPath:
-        path: /var/lib/docker/
+        path: /var/lib/containerd/

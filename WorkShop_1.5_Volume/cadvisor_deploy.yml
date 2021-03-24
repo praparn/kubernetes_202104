@@ -59,7 +59,7 @@ spec:
             name: volrun
           - mountPath: /sys
             name: volsys
-          - mountPath: /var/lib/docker/
+          - mountPath: /var/lib/containerd/
             name: voldocker
           image: labdocker/cadvisor:latest
           ports:
@@ -74,4 +74,4 @@ spec:
           path: /sys
       - name: voldocker
         hostPath:
-          path: /var/lib/docker/
+          path: /var/lib/containerd/

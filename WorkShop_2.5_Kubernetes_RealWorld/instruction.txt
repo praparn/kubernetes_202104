@@ -17,15 +17,6 @@ Note: This instruction will start lab for kubernetes's cluster for real workshop
 	*Optional2: Check for module enable (IF not run script below for enable)
 	-----------------------------------------------
 	sudo su -
-	cp /etc/modules /etc/modules_backup
-	echo "" > /etc/modules
-    echo "ip_vs" >> /etc/modules
-    echo "ip_vs_rr" >> /etc/modules
-    echo "ip_vs_wrr" >> /etc/modules
-    echo "ip_vs_sh" >> /etc/modules
-    echo "nf_conntrack_ipv4" >> /etc/modules
-	reboot
-	*After reboot check modprobe*
     sudo lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 	-----------------------------------------------
 
@@ -120,7 +111,7 @@ UDP  ip-10-96-0-10.ap-southeast-1 lc
 	-------------------------------------------------
 
 11. (Master) Create calico net plugin for network for cluster by command:
-    kubectl apply -f https://docs.projectcalico.org/v3.11/manifests/calico.yaml
+    kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')&env.WEAVE_MTU=8916"
 
 12. (Master) Check master readiness and dns by command (Take 5 - 10 min):
 	watch kubectl get pods --all-namespaces
