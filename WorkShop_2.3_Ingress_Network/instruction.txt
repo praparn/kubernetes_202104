@@ -3,37 +3,49 @@ Note: This instruction will start lab for kubernetes for ingress workshop
 --------------------------------------------------------------------------
 0. (Master) Create ingress set:
 	0.1 Create mandatory resource by command: 
-	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/mandatory.yaml
+	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/baremetal/deploy.yaml
+
 	*Remark: If you need to modified config. Edit this file first
-	more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/mandatory.yaml
+	more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/baremetal/deploy.yaml
 ========================================
 Example:
 [...]
-kind: ConfigMap
+# Source: ingress-nginx/templates/controller-configmap.yaml
 apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: nginx-configuration
-  namespace: ingress-nginx
   labels:
+    helm.sh/chart: ingress-nginx-3.23.0
     app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/version: 0.44.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: controller
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+data:
 
 [...]
 ========================================
-	0.2 Create service with NodePort by command: 
-	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/baremetal/service-nodeport.yaml
+	0.2 Check service and pods by command: 
 	kubectl get svc -n=ingress-nginx				==> Record Port No for Create LoadBalancer (*Important)
-	kubectl get pods -n=ingress-nginx			
+	watch kubectl get pods -n=ingress-nginx			
 
 ========================================
 Example:
-NAME            TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
-ingress-nginx   NodePort   10.96.228.199   <none>        80:32037/TCP,443:32119/TCP   12h		(Port of http(80) ==> 32037, Port of https(443) ==> 32119 )
+NAME                                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             NodePort    10.110.87.52    <none>        80:30074/TCP,443:30761/TCP   9s
+ingress-nginx-controller-admission   ClusterIP   10.96.210.210   <none>        443/TCP                      9s
+
+NAME                                        READY   STATUS      RESTARTS   AGE
+ingress-nginx-admission-create-xlsq6        0/1     Completed   0          57s
+ingress-nginx-admission-patch-lzpvs         0/1     Completed   2          57s
+ingress-nginx-controller-67897c9494-gbznd   1/1     Running     0          58s
 ========================================
 
 	0.3 Test open browser: (404 Not Found was expected):
 		curl ifconfig.co
-		curl http://<public ip>:<Port of http(80)>
+		curl http://<private ip>:<Port of http(80)> / Webbrowser
 
 1. Create Service/Pods/Deployment for webtest1 and webtest2 by command:
 	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/webtest_deploy.yml
