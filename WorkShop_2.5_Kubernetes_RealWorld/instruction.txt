@@ -111,7 +111,7 @@ UDP  ip-10-96-0-10.ap-southeast-1 lc
 	-------------------------------------------------
 
 11. (Master) Create calico net plugin for network for cluster by command:
-    kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')&env.WEAVE_MTU=8916"
+    kubectl apply -f ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/calico_tuning.yaml
 
 12. (Master) Check master readiness and dns by command (Take 5 - 10 min):
 	watch kubectl get pods --all-namespaces
@@ -182,7 +182,6 @@ watch kubectl get pods --all-namespaces
     kubectl logs kube-proxy-<XXXX> -n kube-system
 
 22 (Worker1) Check IPVS policy by ipvsadm
-	sudo apt-get update && sudo apt-get install -y ipvsadm
 	sudo ipvsadm
 	-------------------------------------------------
 	Example Result:
@@ -208,7 +207,6 @@ UDP  ip-10-96-0-10.ap-southeast-1 lc
 	-------------------------------------------------
 
 23 (Worker2) Check IPVS policy by ipvsadm
-	sudo apt-get update && sudo apt-get install -y ipvsadm
 	sudo ipvsadm
 	-------------------------------------------------
 	Example Result:
@@ -252,23 +250,28 @@ kubectl delete svc/webtest
 
 27. (Master) Create ingress set:
 	27.1. Create mandatory resource by command: 
-	kubectl apply -f ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/mandatory.yaml
+	kubectl apply -f ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
 	*Remark: If you need to modified config. Edit this file first
-	more ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/mandatory.yaml
+	more ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
 ========================================
 Example:
 [...]
-kind: ConfigMap
 apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: nginx-configuration
-  namespace: ingress-nginx
   labels:
+    helm.sh/chart: ingress-nginx-3.23.0
     app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/part-of: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/version: 0.44.0
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: controller
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
 data:
   use-http2: "true"
   proxy-body-size: "50m"
+  keepalive_timeout: "350"
 [...]
 ========================================
 

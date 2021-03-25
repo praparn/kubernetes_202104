@@ -10,7 +10,7 @@ kind: InitConfiguration
 localAPIEndpoint:
   bindPort: 6443
 nodeRegistration:
-  criSocket: /var/run/dockershim.sock
+  #criSocket: /var/run/dockershim.sock
   name: hostnamemaster
   kubeletExtraArgs:
     cloud-provider: aws
