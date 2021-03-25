@@ -16,6 +16,8 @@ Link for download:
     git clone https://github.com/praparn/kubernetes_202104.git
 
 5. Check module for IPVS by command:
+    sudo reboot
+    *After restart:
     sudo lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 
 6. Initial kubernetes by command:
