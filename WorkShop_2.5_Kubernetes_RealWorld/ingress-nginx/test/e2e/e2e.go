@@ -30,16 +30,19 @@ import (
 	"k8s.io/ingress-nginx/test/e2e/framework"
 
 	// tests to run
+	_ "k8s.io/ingress-nginx/test/e2e/admission"
 	_ "k8s.io/ingress-nginx/test/e2e/annotations"
 	_ "k8s.io/ingress-nginx/test/e2e/dbg"
 	_ "k8s.io/ingress-nginx/test/e2e/defaultbackend"
 	_ "k8s.io/ingress-nginx/test/e2e/gracefulshutdown"
+	_ "k8s.io/ingress-nginx/test/e2e/ingress"
 	_ "k8s.io/ingress-nginx/test/e2e/leaks"
 	_ "k8s.io/ingress-nginx/test/e2e/loadbalance"
 	_ "k8s.io/ingress-nginx/test/e2e/lua"
 	_ "k8s.io/ingress-nginx/test/e2e/security"
 	_ "k8s.io/ingress-nginx/test/e2e/servicebackend"
 	_ "k8s.io/ingress-nginx/test/e2e/settings"
+	_ "k8s.io/ingress-nginx/test/e2e/settings/ocsp"
 	_ "k8s.io/ingress-nginx/test/e2e/ssl"
 	_ "k8s.io/ingress-nginx/test/e2e/status"
 	_ "k8s.io/ingress-nginx/test/e2e/tcpudp"
@@ -50,11 +53,6 @@ import (
 func RunE2ETests(t *testing.T) {
 	logs.InitLogs()
 	defer logs.FlushLogs()
-
-	// Disable skipped tests unless they are explicitly requested.
-	if config.GinkgoConfig.FocusString == "" && config.GinkgoConfig.SkipString == "" {
-		config.GinkgoConfig.SkipString = `\[Flaky\]|\[Feature:.+\]`
-	}
 
 	if os.Getenv("KUBECTL_PATH") != "" {
 		framework.KubectlPath = os.Getenv("KUBECTL_PATH")

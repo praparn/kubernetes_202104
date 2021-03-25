@@ -30,6 +30,7 @@ jaeger-collector-host: jaeger-agent.default.svc.cluster.local
 datadog-collector-host: datadog-agent.default.svc.cluster.local
 ```
 NOTE: While the option is called `jaeger-collector-host`, you will need to point this to a `jaeger-agent`, and not the `jaeger-collector` component.
+Alternatively, you can set `jaeger-endpoint` and specify the full endpoint for uploading traces. This will use TCP and should be used for a collector rather than an agent.
 
 Next you will need to deploy a distributed tracing system which uses OpenTracing.
 [Zipkin](https://github.com/openzipkin/zipkin) and
@@ -39,6 +40,12 @@ have been tested.
 
 Other optional configuration options:
 ```
+# specifies the name to use for the server span
+opentracing-operation-name
+
+# specifies specifies the name to use for the location span
+opentracing-location-operation-name
+
 # specifies the port to use when uploading traces, Default: 9411
 zipkin-collector-port
 
@@ -50,6 +57,9 @@ zipkin-sample-rate
 
 # specifies the port to use when uploading traces, Default: 6831
 jaeger-collector-port
+
+# specifies the endpoint to use when uploading traces to a collector instead of an agent
+jaeger-endpoint
 
 # specifies the service name to use for any traces created, Default: nginx
 jaeger-service-name
@@ -85,6 +95,9 @@ datadog-collector-port
 
 # specifies the service name to use for any traces created, Default: nginx
 datadog-service-name
+
+# specifies the environment this trace belongs to, Default: prod
+datadog-environment
 
 # specifies the operation name to use for any traces collected, Default: nginx.handle
 datadog-operation-name-override
@@ -122,7 +135,7 @@ data:
   enable-opentracing: "true"
   zipkin-collector-host: zipkin.default.svc.cluster.local
 metadata:
-  name: nginx-configuration
+  name: ingress-nginx-controller
   namespace: kube-system
 ' | kubectl replace -f -
 ```
@@ -177,7 +190,7 @@ In the Zipkin interface we can see the details:
         enable-opentracing: "true"
         jaeger-collector-host: jaeger-agent.default.svc.cluster.local
       metadata:
-        name: nginx-configuration
+        name: ingress-nginx-controller
         namespace: kube-system
       ' | kubectl replace -f -
     ```

@@ -1,4 +1,5 @@
-_G._TEST = true
+local cjson = require("cjson.safe")
+local util = require("util")
 
 local balancer, expected_implementations, backends
 local original_ngx = ngx
@@ -110,10 +111,11 @@ describe("Balancer", function()
         },
       }
 
+      mock_ngx({ var = { proxy_upstream_name = backend.name } })
+      reset_balancer()
+
       balancer.sync_backend(backend)
       balancer.sync_backend(canary_backend)
-
-      mock_ngx({ var = { proxy_upstream_name = backend.name } })
 
       local expected = balancer.get_balancer()
 
@@ -134,6 +136,7 @@ describe("Balancer", function()
         }
       }
       mock_ngx({ var = { request_uri = "/" } })
+      reset_balancer()
     end)
 
     it("returns false when no trafficShapingPolicy is set", function()
@@ -171,8 +174,6 @@ describe("Balancer", function()
 
     context("canary by cookie", function()
       it("returns correct result for given cookies", function()
-        backend.trafficShapingPolicy.cookie = "canaryCookie"
-        balancer.sync_backend(backend)
         local test_patterns = {
           {
             case_title = "cookie_value is 'always'",
@@ -204,6 +205,9 @@ describe("Balancer", function()
             ["cookie_" .. test_pattern.request_cookie_name] = test_pattern.request_cookie_value,
             request_uri = "/"
           }})
+          reset_balancer()
+          backend.trafficShapingPolicy.cookie = "canaryCookie"
+          balancer.sync_backend(backend)
           assert.message("\nTest data pattern: " .. test_pattern.case_title)
             .equal(test_pattern.expected_result, balancer.route_to_alternative_balancer(_balancer))
           reset_ngx()
@@ -275,14 +279,14 @@ describe("Balancer", function()
         }
 
         for _, test_pattern in pairs(test_patterns) do
-          reset_balancer()
-          backend.trafficShapingPolicy.header = test_pattern.header_name
-          backend.trafficShapingPolicy.headerValue = test_pattern.header_value
-          balancer.sync_backend(backend)
           mock_ngx({ var = {
             ["http_" .. test_pattern.request_header_name] = test_pattern.request_header_value,
             request_uri = "/"
           }})
+          reset_balancer()
+          backend.trafficShapingPolicy.header = test_pattern.header_name
+          backend.trafficShapingPolicy.headerValue = test_pattern.header_value
+          balancer.sync_backend(backend)
           assert.message("\nTest data pattern: " .. test_pattern.case_title)
             .equal(test_pattern.expected_result, balancer.route_to_alternative_balancer(_balancer))
           reset_ngx()
@@ -308,7 +312,7 @@ describe("Balancer", function()
 
     it("resolves external name to endpoints when service is of type External name", function()
       backend = {
-        name = "exmaple-com", service = { spec = { ["type"] = "ExternalName" } },
+        name = "example-com", service = { spec = { ["type"] = "ExternalName" } },
         endpoints = {
           { address = "example.com", port = "80", maxFails = 0, failTimeout = 0 }
         }
@@ -327,7 +331,7 @@ describe("Balancer", function()
         }
       })
       expected_backend = {
-        name = "exmaple-com", service = { spec = { ["type"] = "ExternalName" } },
+        name = "example-com", service = { spec = { ["type"] = "ExternalName" } },
         endpoints = {
           { address = "192.168.1.1", port = "80" },
           { address = "1.2.3.4", port = "80" },
@@ -337,7 +341,9 @@ describe("Balancer", function()
       local mock_instance = { sync = function(backend) end }
       setmetatable(mock_instance, implementation)
       implementation.new = function(self, backend) return mock_instance end
+      local s = spy.on(implementation, "new")
       assert.has_no.errors(function() balancer.sync_backend(backend) end)
+      assert.spy(s).was_called_with(implementation, expected_backend)
       stub(mock_instance, "sync")
       assert.has_no.errors(function() balancer.sync_backend(backend) end)
       assert.stub(mock_instance.sync).was_called_with(mock_instance, expected_backend)
@@ -345,14 +351,14 @@ describe("Balancer", function()
 
     it("wraps IPv6 addresses into square brackets", function()
       local backend = {
-        name = "exmaple-com",
+        name = "example-com",
         endpoints = {
           { address = "::1", port = "8080", maxFails = 0, failTimeout = 0 },
           { address = "192.168.1.1", port = "8080", maxFails = 0, failTimeout = 0 },
         }
       }
       local expected_backend = {
-        name = "exmaple-com",
+        name = "example-com",
         endpoints = {
           { address = "[::1]", port = "8080", maxFails = 0, failTimeout = 0 },
           { address = "192.168.1.1", port = "8080", maxFails = 0, failTimeout = 0 },
@@ -362,9 +368,11 @@ describe("Balancer", function()
       local mock_instance = { sync = function(backend) end }
       setmetatable(mock_instance, implementation)
       implementation.new = function(self, backend) return mock_instance end
-      assert.has_no.errors(function() balancer.sync_backend(backend) end)
+      local s = spy.on(implementation, "new")
+      assert.has_no.errors(function() balancer.sync_backend(util.deepcopy(backend)) end)
+      assert.spy(s).was_called_with(implementation, expected_backend)
       stub(mock_instance, "sync")
-      assert.has_no.errors(function() balancer.sync_backend(backend) end)
+      assert.has_no.errors(function() balancer.sync_backend(util.deepcopy(backend)) end)
       assert.stub(mock_instance.sync).was_called_with(mock_instance, expected_backend)
     end)
 
@@ -397,5 +405,39 @@ describe("Balancer", function()
       assert.has_no.errors(function() balancer.sync_backend(backend) end)
       assert.stub(mock_instance.sync).was_called_with(mock_instance, backend)
     end)
+  end)
+
+  describe("sync_backends()", function()
+
+    after_each(function()
+      reset_ngx()
+    end)
+
+    it("sync backends", function()
+      backends = {
+        {
+          name = "access-router-production-web-80", port = "80", secure = false,
+          sslPassthrough = false,
+          endpoints = {
+            { address = "10.184.7.40", port = "8080", maxFails = 0, failTimeout = 0 },
+            { address = "10.184.97.100", port = "8080", maxFails = 0, failTimeout = 0 },
+            { address = "10.184.98.239", port = "8080", maxFails = 0, failTimeout = 0 },
+          },
+          sessionAffinityConfig = { name = "", cookieSessionAffinity = { name = "" } },
+          trafficShapingPolicy = {
+            weight = 0,
+            header = "",
+            headerValue = "",
+            cookie = ""
+          },
+        }
+      }
+      mock_ngx({ var = { proxy_upstream_name = "access-router-production-web-80" }, ctx = { } })
+      ngx.shared.configuration_data:set("backends", cjson.encode(backends))
+      reset_balancer()
+      balancer.init_worker()
+      assert.not_equal(balancer.get_balancer(), nil)
+    end)
+
   end)
 end)

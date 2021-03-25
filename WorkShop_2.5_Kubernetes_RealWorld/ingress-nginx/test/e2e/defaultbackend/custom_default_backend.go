@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/onsi/ginkgo"
 	"github.com/stretchr/testify/assert"
@@ -37,18 +36,14 @@ var _ = framework.IngressNginxDescribe("[Default Backend] custom service", func(
 	ginkgo.It("uses custom default backend that returns 200 as status code", func() {
 		f.NewEchoDeployment()
 
-		err := framework.UpdateDeployment(f.KubeClientSet, f.Namespace, "nginx-ingress-controller", 1,
-			func(deployment *appsv1.Deployment) error {
-				args := deployment.Spec.Template.Spec.Containers[0].Args
-				args = append(args, fmt.Sprintf("--default-backend-service=%v/%v", f.Namespace, framework.EchoService))
-				deployment.Spec.Template.Spec.Containers[0].Args = args
-				_, err := f.KubeClientSet.AppsV1().Deployments(f.Namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
-				time.Sleep(5 * time.Second)
-				return err
-			})
+		err := f.UpdateIngressControllerDeployment(func(deployment *appsv1.Deployment) error {
+			args := deployment.Spec.Template.Spec.Containers[0].Args
+			args = append(args, fmt.Sprintf("--default-backend-service=%v/%v", f.Namespace, framework.EchoService))
+			deployment.Spec.Template.Spec.Containers[0].Args = args
+			_, err := f.KubeClientSet.AppsV1().Deployments(f.Namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
+			return err
+		})
 		assert.Nil(ginkgo.GinkgoT(), err, "updating deployment")
-
-		time.Sleep(5 * time.Second)
 
 		f.WaitForNginxServer("_",
 			func(server string) bool {

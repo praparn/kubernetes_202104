@@ -31,7 +31,6 @@ rules:
     verbs:
       - get
       - list
-      - update
       - watch
   - apiGroups:
       - extensions
@@ -50,6 +49,14 @@ rules:
     verbs:
       - update
   - apiGroups:
+      - "networking.k8s.io" # k8s 1.14+
+    resources:
+      - ingressclasses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
       - ""
     resources:
       - configmaps
@@ -64,14 +71,6 @@ rules:
       - configmaps
     verbs:
       - create
-  - apiGroups:
-      - ""
-    resources:
-      - endpoints
-    verbs:
-      - create
-      - get
-      - update
   - apiGroups:
       - ""
     resources:

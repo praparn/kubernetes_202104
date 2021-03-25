@@ -52,10 +52,8 @@ func (f *Framework) NewEchoDeploymentWithReplicas(replicas int) {
 // replicas is configurable and
 // name is configurable
 func (f *Framework) NewEchoDeploymentWithNameAndReplicas(name string, replicas int) {
-	deployment := newDeployment(name, f.Namespace, "ingress-controller/echo:1.0.0-dev", 80, int32(replicas),
-		[]string{
-			"openresty",
-		},
+	deployment := newDeployment(name, f.Namespace, "k8s.gcr.io/ingress-nginx/e2e-test-echo@sha256:d34944a61a65382e9a81f5e28e981187b419b9d579322277c5a98c2857fd7c5e", 80, int32(replicas),
+		nil,
 		[]corev1.VolumeMount{},
 		[]corev1.Volume{},
 	)
@@ -90,52 +88,74 @@ func (f *Framework) NewEchoDeploymentWithNameAndReplicas(name string, replicas i
 
 // NewSlowEchoDeployment creates a new deployment of the slow echo server image in a particular namespace.
 func (f *Framework) NewSlowEchoDeployment() {
-	data := map[string]string{}
-	data["default.conf"] = `#
+	cfg := `#
+events {
+	worker_connections  1024;
+	multi_accept on;
+}
 
-server {
-	access_log on;
-	access_log /dev/stdout;
+http {
+	default_type 'text/plain';
+	client_max_body_size 0;
 
-	listen 80;
+	server {
+		access_log on;
+		access_log /dev/stdout;
 
-	location / {
-		echo ok;
-	}
+		listen 80;
 
-	location ~ ^/sleep/(?<sleepTime>[0-9]+)$ {
-		echo_sleep $sleepTime;
-		echo "ok after $sleepTime seconds";
+		location / {
+			content_by_lua_block {
+				ngx.print("ok")
+			}
+		}
+
+		location ~ ^/sleep/(?<sleepTime>[0-9]+)$ {
+			content_by_lua_block {
+				ngx.sleep(ngx.var.sleepTime)
+				ngx.print("ok after " .. ngx.var.sleepTime .. " seconds")
+			}
+		}
 	}
 }
 
 `
 
+	f.NGINXWithConfigDeployment(SlowEchoService, cfg)
+}
+
+// NGINXWithConfigDeployment creates an NGINX deployment using a configmap containing the nginx.conf configuration
+func (f *Framework) NGINXWithConfigDeployment(name string, cfg string) {
+	cfgMap := map[string]string{
+		"nginx.conf": cfg,
+	}
+
 	_, err := f.KubeClientSet.CoreV1().ConfigMaps(f.Namespace).Create(context.TODO(), &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      SlowEchoService,
+			Name:      name,
 			Namespace: f.Namespace,
 		},
-		Data: data,
+		Data: cfgMap,
 	}, metav1.CreateOptions{})
 	assert.Nil(ginkgo.GinkgoT(), err, "creating configmap")
 
-	deployment := newDeployment(SlowEchoService, f.Namespace, "openresty/openresty:1.15.8.2-alpine", 80, 1,
+	deployment := newDeployment(name, f.Namespace, "k8s.gcr.io/ingress-nginx/nginx:v20210104-g2254a9186@sha256:edd1d06bc6892b0dfb42de7d782ceb3c50eec843b09024abf3f95ba23f4feed5", 80, 1,
 		nil,
 		[]corev1.VolumeMount{
 			{
-				Name:      SlowEchoService,
-				MountPath: "/etc/nginx/conf.d",
+				Name:      name,
+				MountPath: "/etc/nginx/nginx.conf",
+				SubPath:   "nginx.conf",
 				ReadOnly:  true,
 			},
 		},
 		[]corev1.Volume{
 			{
-				Name: SlowEchoService,
+				Name: name,
 				VolumeSource: corev1.VolumeSource{
 					ConfigMap: &corev1.ConfigMapVolumeSource{
 						LocalObjectReference: corev1.LocalObjectReference{
-							Name: SlowEchoService,
+							Name: name,
 						},
 					},
 				},
@@ -147,7 +167,7 @@ server {
 
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      SlowEchoService,
+			Name:      name,
 			Namespace: f.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
@@ -160,14 +180,14 @@ server {
 				},
 			},
 			Selector: map[string]string{
-				"app": SlowEchoService,
+				"app": name,
 			},
 		},
 	}
 
 	f.EnsureService(service)
 
-	err = WaitForEndpoints(f.KubeClientSet, DefaultTimeout, SlowEchoService, f.Namespace, 1)
+	err = WaitForEndpoints(f.KubeClientSet, DefaultTimeout, name, f.Namespace, 1)
 	assert.Nil(ginkgo.GinkgoT(), err, "waiting for endpoints to become ready")
 }
 
@@ -250,7 +270,7 @@ func (f *Framework) NewGRPCBinDeployment() {
 				{
 					Name:       "secure",
 					Port:       9001,
-					TargetPort: intstr.FromInt(9000),
+					TargetPort: intstr.FromInt(9001),
 					Protocol:   corev1.ProtocolTCP,
 				},
 			},
@@ -267,10 +287,11 @@ func (f *Framework) NewGRPCBinDeployment() {
 func newDeployment(name, namespace, image string, port int32, replicas int32, command []string,
 	volumeMounts []corev1.VolumeMount, volumes []corev1.Volume) *appsv1.Deployment {
 	probe := &corev1.Probe{
-		InitialDelaySeconds: 1,
+		InitialDelaySeconds: 2,
 		PeriodSeconds:       1,
 		SuccessThreshold:    1,
-		TimeoutSeconds:      1,
+		TimeoutSeconds:      2,
+		FailureThreshold:    6,
 		Handler: corev1.Handler{
 			HTTPGet: &corev1.HTTPGetAction{
 				Port: intstr.FromString("http"),
@@ -330,7 +351,7 @@ func newDeployment(name, namespace, image string, port int32, replicas int32, co
 
 // NewHttpbinDeployment creates a new single replica deployment of the httpbin image in a particular namespace.
 func (f *Framework) NewHttpbinDeployment() {
-	f.NewDeployment(HTTPBinService, "ingress-controller/httpbin:1.0.0-dev", 80, 1)
+	f.NewDeployment(HTTPBinService, "k8s.gcr.io/ingress-nginx/e2e-test-httpbin@sha256:c6372ef57a775b95f18e19d4c735a9819f2e7bb4641e5e3f27287d831dfeb7e8", 80, 1)
 }
 
 // NewDeployment creates a new deployment in a particular namespace.
@@ -376,7 +397,7 @@ func (f *Framework) DeleteDeployment(name string) error {
 	})
 	assert.Nil(ginkgo.GinkgoT(), err, "deleting deployment")
 
-	return WaitForPodsDeleted(f.KubeClientSet, 2*time.Minute, f.Namespace, metav1.ListOptions{
+	return waitForPodsDeleted(f.KubeClientSet, 2*time.Minute, f.Namespace, metav1.ListOptions{
 		LabelSelector: labelSelectorToString(d.Spec.Selector.MatchLabels),
 	})
 }
@@ -395,4 +416,14 @@ func (f *Framework) ScaleDeploymentToZero(name string) {
 
 	err = WaitForEndpoints(f.KubeClientSet, DefaultTimeout, name, f.Namespace, 0)
 	assert.Nil(ginkgo.GinkgoT(), err, "waiting for no endpoints")
+}
+
+// UpdateIngressControllerDeployment updates the ingress-nginx deployment
+func (f *Framework) UpdateIngressControllerDeployment(fn func(deployment *appsv1.Deployment) error) error {
+	err := UpdateDeployment(f.KubeClientSet, f.Namespace, "nginx-ingress-controller", 1, fn)
+	if err != nil {
+		return err
+	}
+
+	return f.updateIngressNGINXPod()
 }

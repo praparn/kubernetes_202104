@@ -72,12 +72,12 @@ var _ = framework.DescribeAnnotation("influxdb-*", func() {
 				Expect().
 				Status(http.StatusOK)
 
-			time.Sleep(10 * time.Second)
+			framework.Sleep(10 * time.Second)
 
 			var measurements string
 			var err error
 
-			err = wait.PollImmediate(time.Second, time.Minute, func() (bool, error) {
+			err = wait.Poll(time.Second, time.Minute, func() (bool, error) {
 				measurements, err = extractInfluxDBMeasurements(f)
 				if err != nil {
 					return false, nil
@@ -100,7 +100,7 @@ var _ = framework.DescribeAnnotation("influxdb-*", func() {
 func createInfluxDBService(f *framework.Framework) *corev1.Service {
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "inflxudb",
+			Name:      "influxdb",
 			Namespace: f.Namespace,
 		},
 		Spec: corev1.ServiceSpec{Ports: []corev1.ServicePort{

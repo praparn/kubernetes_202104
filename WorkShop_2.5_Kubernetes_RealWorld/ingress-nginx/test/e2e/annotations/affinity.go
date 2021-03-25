@@ -86,7 +86,7 @@ var _ = framework.DescribeAnnotation("affinity session-cookie-name", func() {
 
 		_, err := f.KubeClientSet.NetworkingV1beta1().Ingresses(f.Namespace).Update(context.TODO(), ing, metav1.UpdateOptions{})
 		assert.Nil(ginkgo.GinkgoT(), err, "updating ingress")
-		time.Sleep(5 * time.Second)
+		framework.Sleep()
 
 		f.HTTPTestClient().
 			GET("/").
@@ -145,7 +145,7 @@ var _ = framework.DescribeAnnotation("affinity session-cookie-name", func() {
 										},
 									},
 									{
-										Path: "/somewhereelese",
+										Path: "/somewhereelse",
 										Backend: networking.IngressBackend{
 											ServiceName: framework.EchoService,
 											ServicePort: intstr.FromInt(80),
@@ -172,11 +172,11 @@ var _ = framework.DescribeAnnotation("affinity session-cookie-name", func() {
 			Header("Set-Cookie").Contains("Path=/something")
 
 		f.HTTPTestClient().
-			GET("/somewhereelese").
+			GET("/somewhereelse").
 			WithHeader("Host", host).
 			Expect().
 			Status(http.StatusOK).
-			Header("Set-Cookie").Contains("Path=/somewhereelese")
+			Header("Set-Cookie").Contains("Path=/somewhereelse")
 	})
 
 	ginkgo.It("should set cookie with expires", func() {
@@ -311,4 +311,45 @@ var _ = framework.DescribeAnnotation("affinity session-cookie-name", func() {
 			Status(http.StatusOK).
 			Header("Set-Cookie").Contains("SERVERID=")
 	})
+
+	ginkgo.It("should work with server-alias annotation", func() {
+		host := "foo.com"
+		alias1 := "a1.foo.com"
+		alias2 := "a2.foo.com"
+		annotations := make(map[string]string)
+		annotations["nginx.ingress.kubernetes.io/affinity"] = "cookie"
+		annotations["nginx.ingress.kubernetes.io/session-cookie-name"] = "SERVERID"
+		annotations["nginx.ingress.kubernetes.io/server-alias"] = fmt.Sprintf("%s,%s", alias1, alias2)
+
+		ing := framework.NewSingleIngress(host, "/bar", host, f.Namespace, framework.EchoService, 80, annotations)
+		f.EnsureIngress(ing)
+
+		f.WaitForNginxServer(host,
+			func(server string) bool {
+				//server alias sort by sort.Strings(), see: internal/ingress/annotations/alias/main.go:60
+				return strings.Contains(server, fmt.Sprintf("server_name %s %s %s ;", host, alias1, alias2))
+			})
+
+		f.HTTPTestClient().
+			GET("/bar").
+			WithHeader("Host", host).
+			Expect().
+			Status(http.StatusOK).
+			Header("Set-Cookie").Contains("SERVERID=")
+
+		f.HTTPTestClient().
+			GET("/bar").
+			WithHeader("Host", alias1).
+			Expect().
+			Status(http.StatusOK).
+			Header("Set-Cookie").Contains("SERVERID=")
+
+		f.HTTPTestClient().
+			GET("/bar").
+			WithHeader("Host", alias2).
+			Expect().
+			Status(http.StatusOK).
+			Header("Set-Cookie").Contains("SERVERID=")
+	})
+
 })

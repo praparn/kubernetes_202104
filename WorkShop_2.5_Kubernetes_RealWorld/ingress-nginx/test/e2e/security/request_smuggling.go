@@ -68,7 +68,8 @@ server {
 })
 
 func smugglingRequest(host, addr string, port int) (string, error) {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%v:%v", addr, port))
+	hostPort := net.JoinHostPort(addr, fmt.Sprintf("%v", port))
+	conn, err := net.Dial("tcp", hostPort)
 	if err != nil {
 		return "", err
 	}
@@ -83,7 +84,7 @@ func smugglingRequest(host, addr string, port int) (string, error) {
 	}
 
 	// wait for /_hidden/index.html response
-	time.Sleep(1 * time.Second)
+	framework.Sleep()
 
 	var buf = make([]byte, 1024)
 	r := bufio.NewReader(conn)

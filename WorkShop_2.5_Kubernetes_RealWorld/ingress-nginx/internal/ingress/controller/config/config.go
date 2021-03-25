@@ -20,7 +20,7 @@ import (
 	"strconv"
 	"time"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	apiv1 "k8s.io/api/core/v1"
 
@@ -70,7 +70,7 @@ const (
 
 	// SSL enabled protocols to use
 	// http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_protocols
-	sslProtocols = "TLSv1.2"
+	sslProtocols = "TLSv1.2 TLSv1.3"
 
 	// Disable TLS 1.3 early data
 	// http://nginx.org/en/docs/http/ngx_http_ssl_module.html#ssl_early_data
@@ -111,10 +111,19 @@ type Configuration struct {
 	// By default this is disabled
 	EnableAccessLogForDefaultBackend bool `json:"enable-access-log-for-default-backend"`
 
-	// AccessLogPath sets the path of the access logs if enabled
+	// AccessLogPath sets the path of the access logs for both http and stream contexts if enabled
 	// http://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+	// http://nginx.org/en/docs/stream/ngx_stream_log_module.html#access_log
 	// By default access logs go to /var/log/nginx/access.log
 	AccessLogPath string `json:"access-log-path,omitempty"`
+
+	// HttpAccessLogPath sets the path of the access logs for http context globally if enabled
+	// http://nginx.org/en/docs/http/ngx_http_log_module.html#access_log
+	HttpAccessLogPath string `json:"http-access-log-path,omitempty"`
+
+	// StreamAccessLogPath sets the path of the access logs for stream context globally if enabled
+	// http://nginx.org/en/docs/stream/ngx_stream_log_module.html#access_log
+	StreamAccessLogPath string `json:"stream-access-log-path,omitempty"`
 
 	// WorkerCPUAffinity bind nginx worker processes to CPUs this will improve response latency
 	// http://nginx.org/en/docs/ngx_core_module.html#worker_cpu_affinity
@@ -128,6 +137,10 @@ type Configuration struct {
 	// EnableModsecurity enables the modsecurity module for NGINX
 	// By default this is disabled
 	EnableModsecurity bool `json:"enable-modsecurity"`
+
+	// EnableOCSP enables the OCSP support in SSL connections
+	// By default this is disabled
+	EnableOCSP bool `json:"enable-ocsp"`
 
 	// EnableOWASPCoreRules enables the OWASP ModSecurity Core Rule Set (CRS)
 	// By default this is disabled
@@ -153,9 +166,18 @@ type Configuration struct {
 	// http://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_timeout
 	ClientBodyTimeout int `json:"client-body-timeout,omitempty"`
 
-	// DisableAccessLog disables the Access Log globally from NGINX ingress controller
-	//http://nginx.org/en/docs/http/ngx_http_log_module.html
+	// DisableAccessLog disables the Access Log globally for both HTTP and Stream contexts from NGINX ingress controller
+	// http://nginx.org/en/docs/http/ngx_http_log_module.html
+	// http://nginx.org/en/docs/stream/ngx_stream_log_module.html
 	DisableAccessLog bool `json:"disable-access-log,omitempty"`
+
+	// DisableHTTPAccessLog disables the Access Log for http context globally from NGINX ingress controller
+	// http://nginx.org/en/docs/http/ngx_http_log_module.html
+	DisableHTTPAccessLog bool `json:"disable-http-access-log,omitempty"`
+
+	// DisableStreamAccessLog disables the Access Log for stream context globally from NGINX ingress controller
+	// http://nginx.org/en/docs/stream/ngx_stream_log_module.html
+	DisableStreamAccessLog bool `json:"disable-stream-access-log,omitempty"`
 
 	// DisableIpv6DNS disables IPv6 for nginx resolver
 	DisableIpv6DNS bool `json:"disable-ipv6-dns"`
@@ -267,6 +289,11 @@ type Configuration struct {
 	// the /nginx_status endpoint of the "_" server
 	NginxStatusIpv4Whitelist []string `json:"nginx-status-ipv4-whitelist,omitempty"`
 	NginxStatusIpv6Whitelist []string `json:"nginx-status-ipv6-whitelist,omitempty"`
+
+	// Plugins configures plugins to use placed in the directory /etc/nginx/lua/plugins.
+	// Every plugin has to have main.lua in the root. Every plugin has to bundle all of its dependencies.
+	// The execution order follows the definition.
+	Plugins []string `json:"plugins,omitempty"`
 
 	// If UseProxyProtocol is enabled ProxyRealIPCIDR defines the default the IP/network address
 	// of your external load balancer
@@ -442,6 +469,21 @@ type Configuration struct {
 	// http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_timeout
 	ProxyStreamTimeout string `json:"proxy-stream-timeout,omitempty"`
 
+	// When a connection to the proxied server cannot be established, determines whether
+	// a client connection will be passed to the next server.
+	// http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream
+	ProxyStreamNextUpstream bool `json:"proxy-stream-next-upstream,omitempty"`
+
+	// Limits the time allowed to pass a connection to the next server.
+	// The 0 value turns off this limitation.
+	// http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_timeout
+	ProxyStreamNextUpstreamTimeout string `json:"proxy-stream-next-upstream-timeout,omitempty"`
+
+	// Limits the number of possible tries a request should be passed to the next server.
+	// The 0 value turns off this limitation.
+	// http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_next_upstream_tries
+	ProxyStreamNextUpstreamTries int `json:"proxy-stream-next-upstream-tries,omitempty"`
+
 	// Sets the number of datagrams expected from the proxied server in response
 	// to the client request if the UDP protocol is used.
 	// http://nginx.org/en/docs/stream/ngx_stream_proxy_module.html#proxy_responses
@@ -460,6 +502,9 @@ type Configuration struct {
 
 	// Sets whether to use incoming X-Forwarded headers.
 	UseForwardedHeaders bool `json:"use-forwarded-headers"`
+
+	// Sets whether to enable the real ip module
+	EnableRealIp bool `json:"enable-real-ip"`
 
 	// Sets the header field for identifying the originating IP address of a client
 	// Default is X-Forwarded-For
@@ -482,6 +527,12 @@ type Configuration struct {
 	// By default this is disabled
 	EnableOpentracing bool `json:"enable-opentracing"`
 
+	// OpentracingOperationName specifies a custom name for the server span
+	OpentracingOperationName string `json:"opentracing-operation-name"`
+
+	// OpentracingOperationName specifies a custom name for the location span
+	OpentracingLocationOperationName string `json:"opentracing-location-operation-name"`
+
 	// ZipkinCollectorHost specifies the host to use when uploading traces
 	ZipkinCollectorHost string `json:"zipkin-collector-host"`
 
@@ -503,6 +554,9 @@ type Configuration struct {
 	// JaegerCollectorPort specifies the port to use when uploading traces
 	// Default: 6831
 	JaegerCollectorPort int `json:"jaeger-collector-port"`
+
+	// JaegerEndpoint specifies the enpoint to use when uploading traces to a collector over TCP
+	JaegerEndpoint string `json:"jaeger-endpoint"`
 
 	// JaegerServiceName specifies the service name to use for any traces created
 	// Default: nginx
@@ -547,6 +601,10 @@ type Configuration struct {
 	// DatadogCollectorPort specifies the port to use when uploading traces
 	// Default: 8126
 	DatadogCollectorPort int `json:"datadog-collector-port"`
+
+	// DatadogEnvironment specifies the environment this trace belongs to.
+	// Default: prod
+	DatadogEnvironment string `json:"datadog-environment"`
 
 	// DatadogServiceName specifies the service name to use for any traces created
 	// Default: nginx
@@ -625,11 +683,6 @@ type Configuration struct {
 	// +optional
 	GlobalExternalAuth GlobalExternalAuth `json:"global-external-auth"`
 
-	// EnableInfluxDB enables the nginx InfluxDB extension
-	// http://github.com/influxdata/nginx-influxdb-module/
-	// By default this is disabled
-	EnableInfluxDB bool `json:"enable-influxdb"`
-
 	// Checksum contains a checksum of the configmap configuration
 	Checksum string `json:"-"`
 
@@ -653,6 +706,36 @@ type Configuration struct {
 	// proxy-ssl-* annotations are applied on on location level only in the nginx.conf file
 	// Default is that those are applied on server level, too
 	ProxySSLLocationOnly bool `json:"proxy-ssl-location-only"`
+
+	// DefaultType Sets the default MIME type of a response.
+	// http://nginx.org/en/docs/http/ngx_http_core_module.html#default_type
+	// Default: text/html
+	DefaultType string `json:"default-type"`
+
+	// GlobalRateLimitMemcachedHost configures memcached host.
+	GlobalRateLimitMemcachedHost string `json:"global-rate-limit-memcached-host"`
+
+	// GlobalRateLimitMemcachedPort configures memcached port.
+	GlobalRateLimitMemcachedPort int `json:"global-rate-limit-memcached-port"`
+
+	// GlobalRateLimitMemcachedConnectTimeout configures timeout when connecting to memcached.
+	// The unit is millisecond.
+	GlobalRateLimitMemcachedConnectTimeout int `json:"global-rate-limit-memcached-connect-timeout"`
+
+	// GlobalRateLimitMemcachedMaxIdleTimeout configured how long connections
+	// should be kept alive in idle state. The unit is millisecond.
+	GlobalRateLimitMemcachedMaxIdleTimeout int `json:"global-rate-limit-memcached-max-idle-timeout"`
+
+	// GlobalRateLimitMemcachedPoolSize configures how many connections
+	// should be kept alive in the pool.
+	// Note that this is per NGINX worker. Make sure your memcached server can
+	// handle `MemcachedPoolSize * <nginx worker count> * <nginx replica count>`
+	// simultaneous connections.
+	GlobalRateLimitMemcachedPoolSize int `json:"global-rate-limit-memcached-pool-size"`
+
+	// GlobalRateLimitStatucCode determines the HTTP status code to return
+	// when limit is exceeding during global rate limiting.
+	GlobalRateLimitStatucCode int `json:"global-rate-limit-status-code"`
 }
 
 // NewDefault returns the default nginx configuration
@@ -668,7 +751,7 @@ func NewDefault() Configuration {
 	defNginxStatusIpv4Whitelist = append(defNginxStatusIpv4Whitelist, "127.0.0.1")
 	defNginxStatusIpv6Whitelist = append(defNginxStatusIpv6Whitelist, "::1")
 	defProxyDeadlineDuration := time.Duration(5) * time.Second
-	defGlobalExternalAuth := GlobalExternalAuth{"", "", "", "", append(defResponseHeaders, ""), "", "", "", []string{}, map[string]string{}}
+	defGlobalExternalAuth := GlobalExternalAuth{"", "", "", "", "", append(defResponseHeaders, ""), "", "", "", []string{}, map[string]string{}}
 
 	cfg := Configuration{
 		AllowBackendServerHeader:         false,
@@ -689,6 +772,7 @@ func NewDefault() Configuration {
 		EnableUnderscoresInHeaders:       false,
 		ErrorLogLevel:                    errorLevel,
 		UseForwardedHeaders:              false,
+		EnableRealIp:                     false,
 		ForwardedForHeader:               "X-Forwarded-For",
 		ComputeFullForwardedFor:          false,
 		ProxyAddOriginalURIHeader:        false,
@@ -703,7 +787,7 @@ func NewDefault() Configuration {
 		HSTSMaxAge:                       hstsMaxAge,
 		HSTSPreload:                      false,
 		IgnoreInvalidHeaders:             true,
-		GzipLevel:                        5,
+		GzipLevel:                        1,
 		GzipMinLength:                    256,
 		GzipTypes:                        gzipTypes,
 		KeepAlive:                        75,
@@ -725,7 +809,7 @@ func NewDefault() Configuration {
 		ProxyHeadersHashBucketSize:       64,
 		ProxyStreamResponses:             1,
 		ReusePort:                        true,
-		ShowServerTokens:                 true,
+		ShowServerTokens:                 false,
 		SSLBufferSize:                    sslBufferSize,
 		SSLCiphers:                       sslCiphers,
 		SSLECDHCurve:                     "auto",
@@ -733,10 +817,10 @@ func NewDefault() Configuration {
 		SSLEarlyData:                     sslEarlyData,
 		SSLSessionCache:                  true,
 		SSLSessionCacheSize:              sslSessionCacheSize,
-		SSLSessionTickets:                true,
+		SSLSessionTickets:                false,
 		SSLSessionTimeout:                sslSessionTimeout,
 		EnableBrotli:                     false,
-		UseGzip:                          true,
+		UseGzip:                          false,
 		UseGeoIP:                         true,
 		UseGeoIP2:                        false,
 		WorkerProcesses:                  strconv.Itoa(runtime.NumCPU()),
@@ -745,6 +829,9 @@ func NewDefault() Configuration {
 		VariablesHashMaxSize:             2048,
 		UseHTTP2:                         true,
 		ProxyStreamTimeout:               "600s",
+		ProxyStreamNextUpstream:          true,
+		ProxyStreamNextUpstreamTimeout:   "600s",
+		ProxyStreamNextUpstreamTries:     3,
 		Backend: defaults.Backend{
 			ProxyBodySize:            bodySize,
 			ProxyConnectTimeout:      5,
@@ -770,36 +857,43 @@ func NewDefault() Configuration {
 			ProxyHTTPVersion:         "1.1",
 			ProxyMaxTempFileSize:     "1024m",
 		},
-		UpstreamKeepaliveConnections: 32,
-		UpstreamKeepaliveTimeout:     60,
-		UpstreamKeepaliveRequests:    100,
-		LimitConnZoneVariable:        defaultLimitConnZoneVariable,
-		BindAddressIpv4:              defBindAddress,
-		BindAddressIpv6:              defBindAddress,
-		ZipkinCollectorPort:          9411,
-		ZipkinServiceName:            "nginx",
-		ZipkinSampleRate:             1.0,
-		JaegerCollectorPort:          6831,
-		JaegerServiceName:            "nginx",
-		JaegerSamplerType:            "const",
-		JaegerSamplerParam:           "1",
-		JaegerSamplerPort:            5778,
-		JaegerSamplerHost:            "http://127.0.0.1",
-		DatadogServiceName:           "nginx",
-		DatadogCollectorPort:         8126,
-		DatadogOperationNameOverride: "nginx.handle",
-		DatadogSampleRate:            1.0,
-		DatadogPrioritySampling:      true,
-		LimitReqStatusCode:           503,
-		LimitConnStatusCode:          503,
-		SyslogPort:                   514,
-		NoTLSRedirectLocations:       "/.well-known/acme-challenge",
-		NoAuthLocations:              "/.well-known/acme-challenge",
-		GlobalExternalAuth:           defGlobalExternalAuth,
-		ProxySSLLocationOnly:         false,
+		UpstreamKeepaliveConnections:           320,
+		UpstreamKeepaliveTimeout:               60,
+		UpstreamKeepaliveRequests:              10000,
+		LimitConnZoneVariable:                  defaultLimitConnZoneVariable,
+		BindAddressIpv4:                        defBindAddress,
+		BindAddressIpv6:                        defBindAddress,
+		ZipkinCollectorPort:                    9411,
+		ZipkinServiceName:                      "nginx",
+		ZipkinSampleRate:                       1.0,
+		JaegerCollectorPort:                    6831,
+		JaegerServiceName:                      "nginx",
+		JaegerSamplerType:                      "const",
+		JaegerSamplerParam:                     "1",
+		JaegerSamplerPort:                      5778,
+		JaegerSamplerHost:                      "http://127.0.0.1",
+		DatadogServiceName:                     "nginx",
+		DatadogEnvironment:                     "prod",
+		DatadogCollectorPort:                   8126,
+		DatadogOperationNameOverride:           "nginx.handle",
+		DatadogSampleRate:                      1.0,
+		DatadogPrioritySampling:                true,
+		LimitReqStatusCode:                     503,
+		LimitConnStatusCode:                    503,
+		SyslogPort:                             514,
+		NoTLSRedirectLocations:                 "/.well-known/acme-challenge",
+		NoAuthLocations:                        "/.well-known/acme-challenge",
+		GlobalExternalAuth:                     defGlobalExternalAuth,
+		ProxySSLLocationOnly:                   false,
+		DefaultType:                            "text/html",
+		GlobalRateLimitMemcachedPort:           11211,
+		GlobalRateLimitMemcachedConnectTimeout: 50,
+		GlobalRateLimitMemcachedMaxIdleTimeout: 10000,
+		GlobalRateLimitMemcachedPoolSize:       50,
+		GlobalRateLimitStatucCode:              429,
 	}
 
-	if klog.V(5) {
+	if klog.V(5).Enabled() {
 		cfg.ErrorLogLevel = "debug"
 	}
 
@@ -827,6 +921,7 @@ type TemplateConfig struct {
 	PublishService           *apiv1.Service
 	EnableMetrics            bool
 	MaxmindEditionFiles      []string
+	MonitorMaxBatchSize      int
 
 	PID        string
 	StatusPath string
@@ -849,13 +944,14 @@ type ListenPorts struct {
 type GlobalExternalAuth struct {
 	URL string `json:"url"`
 	// Host contains the hostname defined in the URL
-	Host              string            `json:"host"`
-	SigninURL         string            `json:"signinUrl"`
-	Method            string            `json:"method"`
-	ResponseHeaders   []string          `json:"responseHeaders,omitempty"`
-	RequestRedirect   string            `json:"requestRedirect"`
-	AuthSnippet       string            `json:"authSnippet"`
-	AuthCacheKey      string            `json:"authCacheKey"`
-	AuthCacheDuration []string          `json:"authCacheDuration"`
-	ProxySetHeaders   map[string]string `json:"proxySetHeaders,omitempty"`
+	Host                   string            `json:"host"`
+	SigninURL              string            `json:"signinUrl"`
+	SigninURLRedirectParam string            `json:"signinUrlRedirectParam"`
+	Method                 string            `json:"method"`
+	ResponseHeaders        []string          `json:"responseHeaders,omitempty"`
+	RequestRedirect        string            `json:"requestRedirect"`
+	AuthSnippet            string            `json:"authSnippet"`
+	AuthCacheKey           string            `json:"authCacheKey"`
+	AuthCacheDuration      []string          `json:"authCacheDuration"`
+	ProxySetHeaders        map[string]string `json:"proxySetHeaders,omitempty"`
 }

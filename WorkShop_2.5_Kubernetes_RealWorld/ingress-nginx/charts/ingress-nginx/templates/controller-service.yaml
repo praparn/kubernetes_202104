@@ -2,9 +2,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-{{- if .Values.controller.service.annotations }}
-  annotations: {{ toYaml .Values.controller.service.annotations | nindent 4 }}
-{{- end }}
+  annotations:
+  {{- range $key, $value := .Values.controller.service.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
   labels:
     {{- include "ingress-nginx.labels" . | nindent 4 }}
     app.kubernetes.io/component: controller
@@ -26,13 +27,13 @@ spec:
 {{- if .Values.controller.service.loadBalancerSourceRanges }}
   loadBalancerSourceRanges: {{ toYaml .Values.controller.service.loadBalancerSourceRanges | nindent 4 }}
 {{- end }}
-{{- if and .Values.controller.service.externalTrafficPolicy (semverCompare ">=1.7-0" .Capabilities.KubeVersion.GitVersion) }}
+{{- if .Values.controller.service.externalTrafficPolicy }}
   externalTrafficPolicy: {{ .Values.controller.service.externalTrafficPolicy }}
 {{- end }}
 {{- if .Values.controller.service.sessionAffinity }}
   sessionAffinity: {{ .Values.controller.service.sessionAffinity }}
 {{- end }}
-{{- if and .Values.controller.service.healthCheckNodePort (semverCompare ">=1.7-0" .Capabilities.KubeVersion.GitVersion) }}
+{{- if .Values.controller.service.healthCheckNodePort }}
   healthCheckNodePort: {{ .Values.controller.service.healthCheckNodePort }}
 {{- end }}
   ports:

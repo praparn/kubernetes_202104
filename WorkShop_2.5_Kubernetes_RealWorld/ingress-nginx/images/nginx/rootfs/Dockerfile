@@ -13,15 +13,17 @@
 # limitations under the License.
 
 
-FROM alpine:3.11 as builder
+FROM alpine:3.13 as builder
 
 COPY . /
 
-RUN apk add -U bash \
+RUN apk update \
+  && apk upgrade \
+  && apk add -U bash \
   && /build.sh
 
 # Use a multi-stage build
-FROM alpine:3.11
+FROM alpine:3.13
 
 ENV PATH=$PATH:/usr/local/luajit/bin:/usr/local/nginx/sbin:/usr/local/nginx/bin
 
@@ -32,7 +34,9 @@ COPY --from=builder /usr/local /usr/local
 COPY --from=builder /opt /opt
 COPY --from=builder /etc/nginx /etc/nginx
 
-RUN apk add -U --no-cache \
+RUN apk update \
+  && apk upgrade \
+  && apk add -U --no-cache \
     bash \
     openssl \
     pcre \
@@ -49,7 +53,6 @@ RUN apk add -U --no-cache \
     nano \
     tzdata \
   && ln -s /usr/local/nginx/sbin/nginx /sbin/nginx \
-  && ln -s /usr/local/lib/mimalloc-1.2/libmimalloc.so /usr/local/lib/libmimalloc.so \
   && addgroup -Sg 101 www-data \
   && adduser -S -D -H -u 101 -h /usr/local/nginx \
     -s /sbin/nologin -G www-data -g www-data www-data \

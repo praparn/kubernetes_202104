@@ -40,7 +40,7 @@ const (
 var _ = framework.IngressNginxDescribe("[Security] Pod Security Policies", func() {
 	f := framework.NewDefaultFramework("pod-security-policies")
 
-	ginkgo.BeforeEach(func() {
+	ginkgo.It("should be running with a Pod Security Policy", func() {
 		psp := createPodSecurityPolicy()
 		_, err := f.KubeClientSet.PolicyV1beta1().PodSecurityPolicies().Create(context.TODO(), psp, metav1.CreateOptions{})
 		if !k8sErrors.IsAlreadyExists(err) {
@@ -62,24 +62,23 @@ var _ = framework.IngressNginxDescribe("[Security] Pod Security Policies", func(
 		assert.Nil(ginkgo.GinkgoT(), err, "updating ingress controller cluster role to use a pod security policy")
 
 		// update the deployment just to trigger a rolling update and the use of the security policy
-		err = framework.UpdateDeployment(f.KubeClientSet, f.Namespace, "nginx-ingress-controller", 1,
-			func(deployment *appsv1.Deployment) error {
-				args := deployment.Spec.Template.Spec.Containers[0].Args
-				args = append(args, "--v=2")
-				deployment.Spec.Template.Spec.Containers[0].Args = args
-				_, err := f.KubeClientSet.AppsV1().Deployments(f.Namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
+		err = f.UpdateIngressControllerDeployment(func(deployment *appsv1.Deployment) error {
+			args := deployment.Spec.Template.Spec.Containers[0].Args
+			args = append(args, "--v=2")
+			deployment.Spec.Template.Spec.Containers[0].Args = args
+			_, err := f.KubeClientSet.AppsV1().Deployments(f.Namespace).Update(context.TODO(), deployment, metav1.UpdateOptions{})
 
-				return err
-			})
+			return err
+		})
 		assert.Nil(ginkgo.GinkgoT(), err, "unexpected error updating ingress controller deployment flags")
 
-		f.NewEchoDeployment()
-	})
+		f.WaitForNginxListening(80)
 
-	ginkgo.It("should be running with a Pod Security Policy", func() {
+		f.NewEchoDeployment()
+
 		f.WaitForNginxConfiguration(
 			func(cfg string) bool {
-				return strings.Contains(cfg, "server_tokens on")
+				return strings.Contains(cfg, "server_tokens off")
 			})
 
 		f.HTTPTestClient().
@@ -125,5 +124,4 @@ func createPodSecurityPolicy() *policyv1beta1.PodSecurityPolicy {
 			},
 		},
 	}
-
 }

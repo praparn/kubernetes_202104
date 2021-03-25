@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	common "github.com/ncabatoff/process-exporter"
 	"github.com/ncabatoff/process-exporter/proc"
@@ -32,8 +32,8 @@ type scrapeRequest struct {
 	done    chan struct{}
 }
 
-// Stopable defines a prometheus collector that can be stopped
-type Stopable interface {
+// Stoppable defines a prometheus collector that can be stopped
+type Stoppable interface {
 	prometheus.Collector
 	Stop()
 }
