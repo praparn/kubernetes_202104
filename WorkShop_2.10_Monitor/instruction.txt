@@ -4,7 +4,7 @@ Instructor for Monitor Kubernetes Farm with Prometheus and Grafana:
 Part1: Create Application and Service for Operate
 ====================================================
 1. (Master) Create HPA by command:
-	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.8_HPA_WorkShop/webtest_deploy_hpa.yml
+	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.8_HPA_WorkShop/webtest_deploy_hpa.yml
 	 
 2. (Master) Check Pods status by command:
 	kubectl get deployment/webtest -o wide
@@ -16,38 +16,26 @@ Part1: Create Application and Service for Operate
 ====================================================
 Part2: Install Prometheus-operator
 ====================================================
-1. (Master) Create CRD for Prometheus-operator by command:
-	kubectl create -f https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.37/example/prometheus-operator-crd/monitoring.coreos.com_alertmanagers.yaml
-	kubectl create -f https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.37/example/prometheus-operator-crd/monitoring.coreos.com_podmonitors.yaml
-	kubectl create -f https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.37/example/prometheus-operator-crd/monitoring.coreos.com_prometheuses.yaml
-	kubectl create -f https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.37/example/prometheus-operator-crd/monitoring.coreos.com_prometheusrules.yaml
-	kubectl create -f https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.37/example/prometheus-operator-crd/monitoring.coreos.com_servicemonitors.yaml
-	kubectl create -f https://raw.githubusercontent.com/coreos/prometheus-operator/release-0.37/example/prometheus-operator-crd/monitoring.coreos.com_thanosrulers.yaml
+1. (Master) Create namespace and update repository of helm by command:
+    kubectl create namespace monitoring
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    helm repo update
 
 2. (Master) Install Prometheus-operator by command:
-	kubectl create namespace monitoring
-	helm install prometheus-operator stable/prometheus-operator --set prometheusOperator.createCustomResource=false --namespace monitoring
+    helm install prometheus-operator prometheus-community/kube-prometheus-stack --namespace monitoring
 
-2. (Master) Check result of pods by commands:
+3. (Master) Check result of pods by commands:
 	watch kubectl get pods -n monitoring
 
-3. (Master) Check CustomerResourceDefinition by command:
-	kubectl get CustomResourceDefinition
-	############################################
-	*Remark:  Expect to found record below
-prometheuses.monitoring.coreos.com            2019-03-09T17:06:47Z
-prometheusrules.monitoring.coreos.com         2019-03-09T17:06:47Z
-servicemonitors.monitoring.coreos.com         2019-03-09T17:06:47Z
-alertmanagers.monitoring.coreos.com           2019-03-09T17:17:05Z
-	############################################
-
 *Remark: In case you need to roll-back this case: (Wait 5 min before start next deploy)
-helm delete prometheus-operator
+helm uninstall prometheus-operator -n=monitoring
+kubectl delete crd alertmanagerconfigs.monitoring.coreos.com
+kubectl delete crd alertmanagers.monitoring.coreos.com
+kubectl delete crd podmonitors.monitoring.coreos.com
+kubectl delete crd probes.monitoring.coreos.com
 kubectl delete crd prometheuses.monitoring.coreos.com
 kubectl delete crd prometheusrules.monitoring.coreos.com
 kubectl delete crd servicemonitors.monitoring.coreos.com
-kubectl delete crd podmonitors.monitoring.coreos.com
-kubectl delete crd alertmanagers.monitoring.coreos.com
 kubectl delete crd thanosrulers.monitoring.coreos.com
 kubectl delete namespace monitoring
 	
@@ -59,13 +47,22 @@ kubectl delete namespace monitoring
 	kubectl port-forward --address 0.0.0.0 pods/<Grafana pods's name> 3000:3000 -n=monitoring
 	(Ex: kubectl port-forward --address 0.0.0.0 pods/grafana-5d8f767-25lx5 3000:3000 -n=monitoring)
 
-	*Optional: For run from local machine
-	kubectl --kubeconfig ./adminconfig.conf port-forward <Grafana pods's name> 3000 -n=monitoring
-	(Ex: kubectl --kubeconfig ./adminconfig.conf port-forward --address 0.0.0.0 pods/prometheus-operator-grafana-544db856cf-zl2dp 3000:3000 -n=monitoring)
-
-5. (local) Open browser and open granfana dashboard by url http://<Public IP of Master>:3000
+6. (local) Open browser and open granfana dashboard by url http://<Public IP of Master>:3000
 	Username: admin
 	Password: prom-operator
 	*Remark: check by command: 
 	kubectl get secret --namespace monitoring prometheus-operator-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
 	kubectl get secret --namespace monitoring prometheus-operator-grafana -o jsonpath="{.data.admin-user}" | base64 --decode ; echo
+
+7. (Master) Cleanup Lab
+   helm uninstall prometheus-operator -n=monitoring
+   kubectl delete crd alertmanagerconfigs.monitoring.coreos.com
+   kubectl delete crd alertmanagers.monitoring.coreos.com
+   kubectl delete crd podmonitors.monitoring.coreos.com
+   kubectl delete crd probes.monitoring.coreos.com
+   kubectl delete crd prometheuses.monitoring.coreos.com
+   kubectl delete crd prometheusrules.monitoring.coreos.com
+   kubectl delete crd servicemonitors.monitoring.coreos.com
+   kubectl delete crd thanosrulers.monitoring.coreos.com
+   kubectl delete namespace monitoring
+   kubectl delete namespace ingress-nginx
