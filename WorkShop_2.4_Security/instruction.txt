@@ -32,7 +32,7 @@ Part 1: Network Policy
 	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.4_Security/policy-allow-ui-client.yml
 
 8. Test open browser again:
-	http://<Publi IP>:32500
+	http://<Public IP>:32500
 
 9. Apply network policy for allow pods frontend (label: role=frontend) to pods backend (label: role=backend) in same namespace
 	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.4_Security/policy-allow-backend.yml
@@ -118,12 +118,10 @@ kubectl create rolebinding rolebindingserviceaccountreadonly \
 
 3. Check token for service account:
 kubectl get secret -n=security
-kubectl describe secret/serviceaccount-readonly-xxxx -n=security
+kubectl describe secret/serviceaccount-readonly-token-xxxx -n=security
 
 4. Test Service Account by command:
 kubectl get pods -n security --as system:serviceaccount:security:serviceaccount-readonly
-kubectl get deployment -n security --as system:serviceaccount:security:serviceaccount-readonly
-kubectl get rs -n security --as system:serviceaccount:security:serviceaccount-readonly
 kubectl get svc -n security --as system:serviceaccount:security:serviceaccount-readonly
 kubectl run webtest --image=labdocker/nginx:http2 --port=443 -n security --as system:serviceaccount:security:serviceaccount-readonly
 

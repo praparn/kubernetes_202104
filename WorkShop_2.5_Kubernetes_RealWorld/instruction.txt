@@ -4,19 +4,18 @@ Note: This instruction will start lab for kubernetes's cluster for real workshop
 0. Reinitial your machine before grouping with your friend by command:
 	sudo su -
     kubeadm reset
-	sudo rm -rf /var/lib/etcd
-    docker system prune -af
+	rm -rf /var/lib/etcd
+	rm -rf /home/ubuntu/.kube
 	reboot
 
 	*Optional1: For clean workshop and initial lab*
 	-----------------------------------------------
 	cd ~
-	rm -rf kubernetes_202005/
-	git clone https://github.com/praparn/kubernetes_202005.git
+	rm -rf kubernetes_202104/
+	git clone https://github.com/praparn/kubernetes_202104.git
 	-----------------------------------------------
 	*Optional2: Check for module enable (IF not run script below for enable)
 	-----------------------------------------------
-	sudo su -
     sudo lsmod | grep -e ip_vs -e nf_conntrack_ipv4
 	-----------------------------------------------
 
@@ -52,15 +51,15 @@ tmux new -s Lab
 
 4. (Master) Prepare configuration for initial kubernetes master
 	cd ~
-	sed -i -e 's/name: hostnamemaster/name: <hostname of master node>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
-	sed -i -e 's/clusterName: Kubernetes/clusterName: <ClusterName>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
-	sed -i -e 's/1.1.1.1/<Public IP Address of Master>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
-	more ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
+	sed -i -e 's/name: hostnamemaster/name: <hostname of master node>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
+	sed -i -e 's/clusterName: Kubernetes/clusterName: <ClusterName>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
+	sed -i -e 's/1.1.1.1/<Public IP Address of Master>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
+	more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
 
 5. (Master) initial cluster by command:
 	sudo su -
 	swapoff -a
-	kubeadm init --config /home/ubuntu/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
+	kubeadm init --config /home/ubuntu/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-init.yaml
 	exit
 
 	*Remark: Need to record token Output
@@ -79,12 +78,12 @@ tmux new -s Lab
 	kubectl taint nodes --all node-role.kubernetes.io/master-
 
 7. (Master) Check IPVS mode on kube-proxy by command:
-    kubectl get pods -n kube-system ==> Record kube-proxy name
+    kubectl get pods -n kube-system
     kubectl logs kube-proxy-<XXXX> -n kube-system
 
 8 (Master) Edit configuration of "kube-proxy" and add schedule to "lc": least connection
 	kubectl get -n kube-system configmap/kube-proxy -o yaml > ~/kube-proxy-configmap.yml
-	sed -i -e 's/scheduler: ""/scheduler: "lc"/g' ~/kube-proxy-configmap.yml
+	sed -i -e 's/scheduler: ""/scheduler: "sh"/g' ~/kube-proxy-configmap.yml
 	more ~/kube-proxy-configmap.yml
 	kubectl apply -f ~/kube-proxy-configmap.yml
 
@@ -111,7 +110,7 @@ UDP  ip-10-96-0-10.ap-southeast-1 lc
 	-------------------------------------------------
 
 11. (Master) Create calico net plugin for network for cluster by command:
-    kubectl apply -f ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/calico_tuning.yaml
+    kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/calico_tuning.yaml
 
 12. (Master) Check master readiness and dns by command (Take 5 - 10 min):
 	watch kubectl get pods --all-namespaces
@@ -119,11 +118,11 @@ UDP  ip-10-96-0-10.ap-southeast-1 lc
 ========================================  Create Dashboard =====================================================================
 13. (Master) Create Dashboard by command:
 	kubectl create namespace kubernetes-dashboard
-	kubectl create secret generic kubernetes-dashboard-certs --from-file=$HOME/kubernetes_202005/WorkShop_1.7_Resource_Management/cert -n kubernetes-dashboard
-	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_1.7_Resource_Management/dashboard-restrict.yml
+	kubectl create secret generic kubernetes-dashboard-certs --from-file=$HOME/kubernetes_202104/WorkShop_1.7_Resource_Management/cert -n kubernetes-dashboard
+	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_1.7_Resource_Management/dashboard-restrict.yml
 	
 14. (Master) Check Bearer Token for access by command:
-	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_1.7_Resource_Management/user-restrict.yml
+	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_1.7_Resource_Management/user-restrict.yml
 	kubectl get secret -n kubernetes-dashboard
 	kubectl describe secret <admin-user-token-xxx> -n kubernetes-dashboard
 	*Remark: Record Token:
@@ -143,31 +142,31 @@ UDP  ip-10-96-0-10.ap-southeast-1 lc
 
 15. (Worker1) Prepare configuration for initial kubernetes worker:
 cd ~
-sed -i -e 's/token: tokenid/token: <token id>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-sed -i -e 's/sha256:cahash/<ca-cert-hash>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-sed -i -e 's/apiServerEndpoint: hostnamemaster:6443/apiServerEndpoint: <full name of master node>:6443/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-sed -i -e 's/name: hostnameworker/name: <full name of worker1 node>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-more ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/token: tokenid/token: <token id>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/sha256:cahash/<ca-cert-hash>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/apiServerEndpoint: hostnamemaster:6443/apiServerEndpoint: <full name of master node>:6443/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/name: hostnameworker/name: <full name of worker1 node>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
 
 16. (Worker1) join cluster by command:
 sudo su -
 swapoff -a
-kubeadm join --config /home/ubuntu/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+kubeadm join --config /home/ubuntu/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
 exit
 htop
 
 17. (Worker2) Prepare configuration for initial kubernetes worker:
 cd ~
-sed -i -e 's/token: tokenid/token: <token id>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-sed -i -e 's/sha256:cahash/<ca-cert-hash>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-sed -i -e 's/apiServerEndpoint: hostnamemaster:6443/apiServerEndpoint: <full name of master node>:6443/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-sed -i -e 's/name: hostnameworker/name: <full name of worker2 node>/g' ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
-more ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/token: tokenid/token: <token id>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/sha256:cahash/<ca-cert-hash>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/apiServerEndpoint: hostnamemaster:6443/apiServerEndpoint: <full name of master node>:6443/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+sed -i -e 's/name: hostnameworker/name: <full name of worker2 node>/g' ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
 
 18. (Worker2) join cluster by command:
 sudo su -
 swapoff -a
-kubeadm join --config /home/ubuntu/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
+kubeadm join --config /home/ubuntu/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/kubeadm-join.yaml
 exit
 htop
 
@@ -250,9 +249,9 @@ kubectl delete svc/webtest
 
 27. (Master) Create ingress set:
 	27.1. Create mandatory resource by command: 
-	kubectl apply -f ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
+	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
 	*Remark: If you need to modified config. Edit this file first
-	more ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
+	more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
 ========================================
 Example:
 [...]
@@ -276,7 +275,7 @@ data:
 ========================================
 
 	27.2 Check file service:
-	more ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/service-l4.yaml
+	more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/service-l4.yaml
 ========================================
 Example:
 [...]
@@ -302,8 +301,8 @@ metadata:
 ========================================
 
 	27.3 Apply service and configuration as below:
-	kubectl apply -f ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/service-l4.yaml
-	kubectl apply -f ~/kubernetes_202005/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/patch-configmap-l4.yaml
+	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/service-l4.yaml
+	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/patch-configmap-l4.yaml
 
 	27.4 Check by command: 
 	watch kubectl get pods -n=ingress-nginx
@@ -319,14 +318,14 @@ ingress-nginx   LoadBalancer   10.108.187.142   af4e0d29c410111e9a11002f20ffeb23
 28. (Master) Test deploy ingress service
 
 # Create Service/Pods/Deployment for webtest1 and webtest2 by command:
-	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.3_Ingress_Network/webtest_deploy.yml
-	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.3_Ingress_Network/webtest_deploy2.yml
+	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/webtest_deploy.yml
+	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/webtest_deploy2.yml
 
 # View service for connection by command:
 	kubectl get svc -o wide
 
 # Create ingress for access by command:
-	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.3_Ingress_Network/ingress_webtest.yml
+	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/ingress_webtest.yml
 	kubectl get ing -o wide
 	kubectl describe ing/ingresswebtest
 
@@ -335,8 +334,8 @@ ingress-nginx   LoadBalancer   10.108.187.142   af4e0d29c410111e9a11002f20ffeb23
 	curl http://<CNAME AWS's ELB> -H 'Host:webtest2.kuberneteslabthailand.com'
 
 30. (Master) Delete Ingress by command:
-	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.3_Ingress_Network/ingress_webtest.yml
+	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/ingress_webtest.yml
 	
 31. (Master) Clean Up Lab:
-	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.3_Ingress_Network/webtest_deploy.yml
-	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.3_Ingress_Network/webtest_deploy2.yml
+	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/webtest_deploy.yml
+	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/webtest_deploy2.yml

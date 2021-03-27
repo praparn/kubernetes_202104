@@ -19,13 +19,13 @@ Link for download:
     sudo lsmod | grep -e ip_vs -e nf_conntrack_ipv4
     -----------------------------------------------
     Example output:
-    ip_vs_sh               16384  0
-    ip_vs_wrr              16384  0
-    ip_vs_rr               16384  0
-    ip_vs                 155648  6 ip_vs_rr,ip_vs_sh,ip_vs_wrr
-    nf_conntrack          139264  1 ip_vs
-    nf_defrag_ipv6         24576  2 nf_conntrack,ip_vs
-    libcrc32c              16384  2 nf_conntrack,ip_vs
+ip_vs_sh               16384  0
+ip_vs_wrr              16384  0
+ip_vs_rr               16384  0
+ip_vs                 155648  8 ip_vs_rr,ip_vs_sh,ip_vs_wrr,ip_vs_lc
+nf_conntrack          139264  1 ip_vs
+nf_defrag_ipv6         24576  2 nf_conntrack,ip_vs
+libcrc32c              16384  2 nf_conntrack,ip_vs
     -----------------------------------------------
     *Remark: If module is not appear. Restart machine for activate by command: sudo reboot
 
