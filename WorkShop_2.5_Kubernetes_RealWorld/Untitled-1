@@ -1,0 +1,16 @@
+====================================================
+Lab Description: (Check you excel sheet)
+ClusterName: TrainingAdvanceDockerwithK8SStudentG9
+CA-Cert-Hash: sha256:9f3f94d4aa4d9bf499c71de910d6e3ecd8e8868c7cb98c52583167cce8eff544
+Token: bm0xv4.eowrkx5hbkjjftav
+Ingress CNAME: ae714106db8af4ce2bb437c23cdc0754-a893eb3274461de9.elb.ap-southeast-1.amazonaws.com
+
+Machine name		            			Roles:			IP Address: (Private)		IP Address: (Public)			Hostname
+Training_DockerZerotoHero_StudentGX_1	   	Master			10.0.1.248					13.229.127.92					ip-10-0-1-248.ap-southeast-1.compute.internal
+Training_DockerZerotoHero_StudentGX_2       NodePort		10.0.1.8					54.255.195.254					ip-10-0-1-8.ap-southeast-1.compute.internal
+Training_DockerZerotoHero_StudentGX_3   	NodePort		10.0.1.107					13.229.231.131					ip-10-0-1-107.ap-southeast-1.compute.internal
+===================================================
+kubeadm join 10.0.1.248:6443 --token bm0xv4.eowrkx5hbkjjftav \
+    --discovery-token-ca-cert-hash sha256:9f3f94d4aa4d9bf499c71de910d6e3ecd8e8868c7cb98c52583167cce8eff544
+
+eyJhbGciOiJSUzI1NiIsImtpZCI6ImE1MmNoTnhXUzZVOHNNUmMyNkk4aGdVNDh1NGJ0bWJWQk9xVDVuMEIxVEkifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJhZG1pbi11c2VyLXRva2VuLXQ1bXp6Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6ImFkbWluLXVzZXIiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiI5OTcwN2RiMC0wZTBjLTQzMjAtOTg4Mi1jMzE1ZDM4NWNmMzIiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZXJuZXRlcy1kYXNoYm9hcmQ6YWRtaW4tdXNlciJ9.Ph97VTJ92ShGP2QcywNcD7Zsh47E_kMNjarnC-Yzsg73A9p7RqimPt5aPzsWLv8SXQd0g4TmUAi7l5dc9uPGyhVzU3zgjl9llOGP8-rvy2HrinQh_8z-VvQKL6W9R2U5NBNAUaZ7YuEVxE9I2yEDncbo7T1-APQ3DXX-FIylk2743j92qS6wVLc1eLRylZC8eWLjxOCorw5g7AKz-KE-ZwQEfg1riga5Ll4GSITO25Bd8Vtq15t5Bi0ugYqz0QSHj4x1pz0kT676ID1rvYkS5gDh0e5FGlRz2ip8Ws3zjTd3Iw9fWiIzzAgwkUDpP1jhJFCrY9D8EyvIXrVJficV7A

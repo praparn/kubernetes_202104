@@ -73,7 +73,7 @@ tmux new -s Lab
 
 6. (Master) Setup run cluster system by command (Regular User):
 	mkdir -p $HOME/.kube
-  	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config	==> Answer: "Y"
+  	sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 	sudo chown $(id -u):$(id -g) $HOME/.kube/config
 	kubectl taint nodes --all node-role.kubernetes.io/master-
 
@@ -94,7 +94,6 @@ tmux new -s Lab
 	kubectl logs kube-proxy-<XXXX> -n kube-system
 
 10 (Master) Check IPVS policy by ipvsadm
-	sudo apt-get update && sudo apt-get install -y ipvsadm
 	sudo ipvsadm
 	-------------------------------------------------
 	Example Result:
@@ -102,11 +101,11 @@ tmux new -s Lab
 IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  ip-10-96-0-1.ap-southeast-1. lc
-  -> ip-10-0-1-64.ap-southeast-1. Masq    1      0          0         
-TCP  ip-10-96-0-10.ap-southeast-1 lc
-TCP  ip-10-96-0-10.ap-southeast-1 lc
-UDP  ip-10-96-0-10.ap-southeast-1 lc
+TCP  ip-10-96-0-1.ap-southeast-1. sh
+  -> ip-10-0-1-248.ap-southeast-1 Masq    1      0          18        
+TCP  ip-10-96-0-10.ap-southeast-1 sh
+TCP  ip-10-96-0-10.ap-southeast-1 sh
+UDP  ip-10-96-0-10.ap-southeast-1 sh
 	-------------------------------------------------
 
 11. (Master) Create calico net plugin for network for cluster by command:
@@ -188,21 +187,21 @@ watch kubectl get pods --all-namespaces
 IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  ip-10-96-0-1.ap-southeast-1. lc
-  -> ip-10-0-1-64.ap-southeast-1. Masq    1      2          0         
-TCP  ip-10-96-0-10.ap-southeast-1 lc
-  -> ip-192-168-246-194.ap-southe Masq    1      0          0         
-  -> ip-192-168-246-195.ap-southe Masq    1      0          0         
-TCP  ip-10-96-0-10.ap-southeast-1 lc
-  -> ip-192-168-246-194.ap-southe Masq    1      0          0         
-  -> ip-192-168-246-195.ap-southe Masq    1      0          0         
-TCP  ip-10-104-200-71.ap-southeas lc
-  -> ip-192-168-246-196.ap-southe Masq    1      0          0         
-TCP  ip-10-105-46-223.ap-southeas lc
-  -> ip-192-168-246-197.ap-southe Masq    1      0          0         
-UDP  ip-10-96-0-10.ap-southeast-1 lc
-  -> ip-192-168-246-194.ap-southe Masq    1      0          0         
-  -> ip-192-168-246-195.ap-southe Masq    1      0          0 
+TCP  ip-10-96-0-1.ap-southeast-1. sh
+  -> ip-10-0-1-248.ap-southeast-1 Masq    1      3          1         
+TCP  ip-10-96-0-10.ap-southeast-1 sh
+  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
+  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
+TCP  ip-10-96-0-10.ap-southeast-1 sh
+  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
+  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
+TCP  ip-10-99-229-155.ap-southeas sh
+  -> ip-192-168-99-5.ap-southeast Masq    1      0          0         
+TCP  ip-10-107-135-77.ap-southeas sh
+  -> ip-192-168-99-4.ap-southeast Masq    1      0          0         
+UDP  ip-10-96-0-10.ap-southeast-1 sh
+  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
+  -> ip-192-168-99-3.ap-southeast Masq    1      0          0
 	-------------------------------------------------
 
 23 (Worker2) Check IPVS policy by ipvsadm
@@ -212,22 +211,21 @@ UDP  ip-10-96-0-10.ap-southeast-1 lc
 	-------------------------------------------------
 IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
-  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  ip-10-96-0-1.ap-southeast-1. lc
-  -> ip-10-0-1-64.ap-southeast-1. Masq    1      2          0         
-TCP  ip-10-96-0-10.ap-southeast-1 lc
-  -> ip-192-168-246-194.ap-southe Masq    1      0          0         
-  -> ip-192-168-246-195.ap-southe Masq    1      0          0         
-TCP  ip-10-96-0-10.ap-southeast-1 lc
-  -> ip-192-168-246-194.ap-southe Masq    1      0          0         
-  -> ip-192-168-246-195.ap-southe Masq    1      0          0         
-TCP  ip-10-104-200-71.ap-southeas lc
-  -> ip-192-168-246-196.ap-southe Masq    1      0          0         
-TCP  ip-10-105-46-223.ap-southeas lc
-  -> ip-192-168-246-197.ap-southe Masq    1      0          0         
-UDP  ip-10-96-0-10.ap-southeast-1 lc
-  -> ip-192-168-246-194.ap-southe Masq    1      0          0         
-  -> ip-192-168-246-195.ap-southe Masq    1      0          0 
+TCP  ip-10-96-0-1.ap-southeast-1. sh
+  -> ip-10-0-1-248.ap-southeast-1 Masq    1      3          1         
+TCP  ip-10-96-0-10.ap-southeast-1 sh
+  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
+  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
+TCP  ip-10-96-0-10.ap-southeast-1 sh
+  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
+  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
+TCP  ip-10-99-229-155.ap-southeas sh
+  -> ip-192-168-99-5.ap-southeast Masq    1      0          0         
+TCP  ip-10-107-135-77.ap-southeas sh
+  -> ip-192-168-99-4.ap-southeast Masq    1      0          0         
+UDP  ip-10-96-0-10.ap-southeast-1 sh
+  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
+  -> ip-192-168-99-3.ap-southeast Masq    1      0          0
 	-------------------------------------------------
 
 24. (Master) Test deployment basic nginx pods by command
@@ -248,7 +246,7 @@ kubectl delete svc/webtest
 ====================================== Create Ingress Controller====================================================
 
 27. (Master) Create ingress set:
-	27.1. Create mandatory resource by command: 
+	27.1. Create NLB ingress on aws resource by command: 
 	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
 	*Remark: If you need to modified config. Edit this file first
 	more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/deploy.yaml
@@ -274,49 +272,24 @@ data:
 [...]
 ========================================
 
-	27.2 Check file service:
-	more ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/service-l4.yaml
-========================================
-Example:
-[...]
-metadata:
-  name: ingress-nginx
-  namespace: ingress-nginx
-  labels:
-    app.kubernetes.io/name: ingress-nginx
-    app.kubernetes.io/part-of: ingress-nginx
-  annotations:
-    # Enable PROXY protocol
-    service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: "*"
-    # Ensure the ELB idle timeout is less than nginx keep-alive timeout. By default,
-    # NGINX keep-alive is set to 75s. If using WebSockets, the value will need to be
-    # increased to '3600' to avoid any potential issues.
-    service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "60"
-	service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
-	service.beta.kubernetes.io/aws-load-balancer-healthcheck-healthy-threshold: "2"
-	service.beta.kubernetes.io/aws-load-balancer-healthcheck-unhealthy-threshold: "2"
-	service.beta.kubernetes.io/aws-load-balancer-healthcheck-interval: "30"
-	service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: "5"
-[...]
-========================================
-
-	27.3 Apply service and configuration as below:
-	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/service-l4.yaml
-	kubectl apply -f ~/kubernetes_202104/WorkShop_2.5_Kubernetes_RealWorld/ingress-nginx/deploy/static/provider/aws/patch-configmap-l4.yaml
-
-	27.4 Check by command: 
+	27.2 Check by command: 
 	watch kubectl get pods -n=ingress-nginx
 
-	27.5 Collect external cname by command:
-	kubectl get svc -n=ingress-nginx	(This may take several miniute before finished) ==> Record "CNAME of ELB"
+	27.3 Collect external cname by command:
+	kubectl get svc -n=ingress-nginx	(This may take several miniute before finished) ==> Record "CNAME of NLB"
 ========================================
 Example:
-NAME            TYPE           CLUSTER-IP       EXTERNAL-IP                                                                   PORT(S)                      AGE
-ingress-nginx   LoadBalancer   10.108.187.142   af4e0d29c410111e9a11002f20ffeb23-988151595.ap-southeast-1.elb.amazonaws.com   80:31252/TCP,443:31461/TCP   17s
+NAME                                 TYPE           CLUSTER-IP     EXTERNAL-IP                                                                          PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.108.51.60   ae714106db8af4ce2bb437c23cdc0754-a893eb3274461de9.elb.ap-southeast-1.amazonaws.com   80:31465/TCP,443:30536/TCP   100s
+ingress-nginx-controller-admission   ClusterIP      10.97.28.203   <none>                                                                               443/TCP                      100s
 ========================================
 
-28. (Master) Test deploy ingress service
+    27.4 Wait (5 - 10 min) for NLB operate done and check response by command:
+	watch -n 10 curl http://<CNAME of NLB>
+	watch -n 10 curl https://<CNAME of NLB> -k
 
+
+28. (Master) Test deploy ingress service
 # Create Service/Pods/Deployment for webtest1 and webtest2 by command:
 	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/webtest_deploy.yml
 	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.3_Ingress_Network/webtest_deploy2.yml
