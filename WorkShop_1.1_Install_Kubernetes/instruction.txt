@@ -16,8 +16,6 @@ Link for download:
     git clone https://github.com/praparn/kubernetes_202104.git
 
 5. Check module for IPVS by command:
-    sudo reboot
-    *After restart:
     sudo lsmod | grep -e ip_vs -e nf_conntrack_ipv4
     -----------------------------------------------
     Example output:
@@ -29,6 +27,7 @@ Link for download:
     nf_defrag_ipv6         24576  2 nf_conntrack,ip_vs
     libcrc32c              16384  2 nf_conntrack,ip_vs
     -----------------------------------------------
+    *Remark: If module is not appear. Restart machine for activate by command: sudo reboot
 
 6. Initial kubernetes by command:
     sudo su -
@@ -44,9 +43,8 @@ Link for download:
 	kubectl taint nodes --all node-role.kubernetes.io/master-
 
 8. Install network component by command:
-    kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml
+    kubectl apply -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.5_Kubernetes_RealWorld/calico_tuning.yaml
     watch kubectl get pods --all-namespaces
-
 
 
     *Optional: For weavenet
@@ -67,7 +65,6 @@ Link for download:
 
 11. Check Existing Certificate and CSR:
     sudo find /etc/kubernetes/pki/ -type f -name "*.crt" -print|egrep -v 'ca.crt$'|xargs -L 1 -t  -i bash -c 'openssl x509  -noout -text -in {}|grep After'
-    kubectl get csr
 
 12. Test deploy application by command:
     kubectl run webtest --image=labdocker/nginx:http2 --port=443

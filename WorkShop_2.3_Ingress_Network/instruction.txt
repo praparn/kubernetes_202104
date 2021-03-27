@@ -110,12 +110,12 @@ _L,version=1.0
 	https://webtest2.kuberneteslabthailand.com:<Port of https(443)>
 
 	*Remark: We can test with curl in lab machine by command:
-	curl https://webtest1.kuberneteslabthailand.com:30761 --resolve webtest1.kuberneteslabthailand.com:<Port of https(443)>:<Public IP> -v -k
-	curl https://webtest2.kuberneteslabthailand.com:30761 --resolve webtest2.kuberneteslabthailand.com:<Port of https(443)>:<Public IP> -v -k
+	curl https://webtest1.kuberneteslabthailand.com:<Port of https(443)> --resolve webtest1.kuberneteslabthailand.com:<Port of https(443)>:<Public IP> -k
+	curl https://webtest2.kuberneteslabthailand.com:<Port of https(443)> --resolve webtest2.kuberneteslabthailand.com:<Port of https(443)>:<Public IP> -k
 
 	Example:
-	curl https://webtest1.kuberneteslabthailand.com:30761 --resolve webtest1.kuberneteslabthailand.com:30761:18.140.67.239 -v -k
-	curl https://webtest2.kuberneteslabthailand.com:30761 --resolve webtest2.kuberneteslabthailand.com:30761:18.140.67.239 -v -k
+	curl https://webtest1.kuberneteslabthailand.com:30761 --resolve webtest1.kuberneteslabthailand.com:30761:18.140.67.239 -k
+	curl https://webtest2.kuberneteslabthailand.com:30761 --resolve webtest2.kuberneteslabthailand.com:30761:18.140.67.239 -k
 
 
 12. Clean Up Lab:
