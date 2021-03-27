@@ -2,8 +2,7 @@
 Part0: Install Metric Server
 ====================================================
 1. (Master) Create Metric Server:
-	cd ~/kubernetes_202005/WorkShop_2.8_HPA_WorkShop/metrics-server/
-	kubectl apply -f deploy/kubernetes/
+	kubectl apply -f https://raw.githubusercontent.com/praparn/kubernetes_202104/main/WorkShop_2.8_HPA_WorkShop/components.yaml
 	kubectl get pods -n=kube-system
 	kubectl logs pods/<metrics's pods name> -n=kube-system
 
@@ -13,7 +12,7 @@ Part0: Install Metric Server
 Part 1: HPA Configuration:
 ====================================================
 1. Create Application by command:
-	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.8_HPA_WorkShop/webtest_deploy_hpa.yml
+	kubectl create -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.8_HPA_WorkShop/webtest_deploy_hpa.yml
 	 
 2. Check Pods status by command:
 	kubectl get deployment/webtest -o wide
@@ -50,4 +49,4 @@ Part 1: HPA Configuration:
 10. Cleanup lab by command:
 	kubectl delete hpa/webtest
 	kubectl delete pods/load-generator
-	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202005/master/WorkShop_2.8_HPA_WorkShop/webtest_deploy_hpa.yml
+	kubectl delete -f https://raw.githubusercontent.com/praparn/kubernetes_202104/master/WorkShop_2.8_HPA_WorkShop/webtest_deploy_hpa.yml

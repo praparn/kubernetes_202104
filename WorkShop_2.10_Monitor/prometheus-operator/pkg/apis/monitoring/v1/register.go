@@ -19,7 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/coreos/prometheus-operator/pkg/apis/monitoring"
+	"github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring"
 )
 
 // SchemeGroupVersion is the group version used to register these objects
@@ -51,10 +51,16 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&PrometheusList{},
 		&ServiceMonitor{},
 		&ServiceMonitorList{},
+		&PodMonitor{},
+		&PodMonitorList{},
+		&Probe{},
+		&ProbeList{},
 		&Alertmanager{},
 		&AlertmanagerList{},
 		&PrometheusRule{},
 		&PrometheusRuleList{},
+		&ThanosRuler{},
+		&ThanosRulerList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil

@@ -15,15 +15,40 @@
 package framework
 
 import (
+	"context"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 
 	"github.com/pkg/errors"
 )
+
+func MakeConfigMapWithCert(kubeClient kubernetes.Interface, ns, name, keyKey, certKey, caKey string,
+	keyBytes, certBytes, caBytes []byte) *v1.ConfigMap {
+
+	cm := &v1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: ns},
+		Data:       map[string]string{},
+	}
+
+	if keyBytes != nil {
+		cm.Data[keyKey] = string(keyBytes)
+	}
+
+	if certBytes != nil {
+		cm.Data[certKey] = string(certBytes)
+	}
+
+	if caBytes != nil {
+		cm.Data[caKey] = string(caBytes)
+	}
+
+	return cm
+}
 
 func (f *Framework) WaitForConfigMapExist(ns, name string) (*v1.ConfigMap, error) {
 	var configMap *v1.ConfigMap
@@ -33,7 +58,7 @@ func (f *Framework) WaitForConfigMapExist(ns, name string) (*v1.ConfigMap, error
 			KubeClient.
 			CoreV1().
 			ConfigMaps(ns).
-			Get(name, metav1.GetOptions{})
+			Get(context.TODO(), name, metav1.GetOptions{})
 
 		if apierrors.IsNotFound(err) {
 			return false, nil
@@ -54,7 +79,7 @@ func (f *Framework) WaitForConfigMapNotExist(ns, name string) error {
 			KubeClient.
 			CoreV1().
 			ConfigMaps(ns).
-			Get(name, metav1.GetOptions{})
+			Get(context.TODO(), name, metav1.GetOptions{})
 
 		if apierrors.IsNotFound(err) {
 			return true, nil

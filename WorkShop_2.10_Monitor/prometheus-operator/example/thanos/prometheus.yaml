@@ -1,20 +1,18 @@
 apiVersion: monitoring.coreos.com/v1
 kind: Prometheus
 metadata:
-  name: self
   labels:
     prometheus: self
+  name: self
+  namespace: default
 spec:
-  podMetadata:
-    labels:
-      thanos-peer: 'true'
   replicas: 2
+  ruleSelector:
+    matchLabels:
+      prometheus: k8s
+      role: prometheus-rulefiles
   serviceMonitorSelector:
     matchLabels:
       app: prometheus
-  ruleSelector:
-    matchLabels:
-      role: prometheus-rulefiles
-      prometheus: k8s
   thanos:
-    peers: thanos-peers.default.svc:10900
+    version: v0.11.2

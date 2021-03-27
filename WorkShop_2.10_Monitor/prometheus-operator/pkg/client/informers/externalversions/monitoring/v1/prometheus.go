@@ -1,4 +1,4 @@
-// Copyright 2018 The prometheus-operator Authors
+// Copyright The prometheus-operator Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,12 +17,13 @@
 package v1
 
 import (
+	"context"
 	time "time"
 
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	internalinterfaces "github.com/coreos/prometheus-operator/pkg/client/informers/externalversions/internalinterfaces"
-	v1 "github.com/coreos/prometheus-operator/pkg/client/listers/monitoring/v1"
-	versioned "github.com/coreos/prometheus-operator/pkg/client/versioned"
+	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
+	internalinterfaces "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions/internalinterfaces"
+	v1 "github.com/prometheus-operator/prometheus-operator/pkg/client/listers/monitoring/v1"
+	versioned "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -59,13 +60,13 @@ func NewFilteredPrometheusInformer(client versioned.Interface, namespace string,
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MonitoringV1().Prometheuses(namespace).List(options)
+				return client.MonitoringV1().Prometheuses(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.MonitoringV1().Prometheuses(namespace).Watch(options)
+				return client.MonitoringV1().Prometheuses(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&monitoringv1.Prometheus{},

@@ -15,20 +15,35 @@
 package framework
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes"
 )
 
-func CreateServiceAndWaitUntilReady(kubeClient kubernetes.Interface, namespace string, service *v1.Service) (finalizerFn, error) {
+func MakeService(pathToYaml string) (*v1.Service, error) {
+	manifest, err := PathToOSFile(pathToYaml)
+	if err != nil {
+		return nil, err
+	}
+	resource := v1.Service{}
+	if err := yaml.NewYAMLOrJSONDecoder(manifest, 100).Decode(&resource); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to decode file %s", pathToYaml))
+	}
+
+	return &resource, nil
+}
+
+func CreateServiceAndWaitUntilReady(kubeClient kubernetes.Interface, namespace string, service *v1.Service) (FinalizerFn, error) {
 	finalizerFn := func() error { return DeleteServiceAndWaitUntilGone(kubeClient, namespace, service.Name) }
 
-	if _, err := kubeClient.CoreV1().Services(namespace).Create(service); err != nil {
+	if _, err := kubeClient.CoreV1().Services(namespace).Create(context.TODO(), service, metav1.CreateOptions{}); err != nil {
 		return finalizerFn, errors.Wrap(err, fmt.Sprintf("creating service %v failed", service.Name))
 	}
 
@@ -53,7 +68,7 @@ func WaitForServiceReady(kubeClient kubernetes.Interface, namespace string, serv
 }
 
 func DeleteServiceAndWaitUntilGone(kubeClient kubernetes.Interface, namespace string, serviceName string) error {
-	if err := kubeClient.CoreV1().Services(namespace).Delete(serviceName, nil); err != nil {
+	if err := kubeClient.CoreV1().Services(namespace).Delete(context.TODO(), serviceName, metav1.DeleteOptions{}); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("deleting service %v failed", serviceName))
 	}
 
@@ -72,9 +87,9 @@ func DeleteServiceAndWaitUntilGone(kubeClient kubernetes.Interface, namespace st
 }
 
 func getEndpoints(kubeClient kubernetes.Interface, namespace, serviceName string) (*v1.Endpoints, error) {
-	endpoints, err := kubeClient.CoreV1().Endpoints(namespace).Get(serviceName, metav1.GetOptions{})
+	endpoints, err := kubeClient.CoreV1().Endpoints(namespace).Get(context.TODO(), serviceName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("requesting endpoints for servce %v failed", serviceName))
+		return nil, errors.Wrap(err, fmt.Sprintf("requesting endpoints for service %v failed", serviceName))
 	}
 	return endpoints, nil
 }

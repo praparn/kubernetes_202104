@@ -1,10 +1,10 @@
 <br>
 <div class="alert alert-info" role="alert">
-    <i class="fa fa-exclamation-triangle"></i><b> Note:</b> Starting with v0.12.0, Prometheus Operator requires use of Kubernetes v1.7.x and up.
+    <i class="fa fa-exclamation-triangle"></i><b> Note:</b> Starting with v0.39.0, Prometheus Operator requires use of Kubernetes v1.16.x and up.
 </div>
 
 
-**Deprecation Warning:** The _custom configuration_ option of the Prometheus Operator will be deprecated in favor of the [_additional scrape config_](./additional-scrape-config.md) option.
+**Deprecation Warning:** The _custom configuration_ option of the Prometheus Operator will be deprecated in favor of the [_additional scrape config_](additional-scrape-config.md) option.
 
 
 # Custom Configuration
@@ -23,7 +23,8 @@ Note that because the Prometheus Operator does not generate the Prometheus confi
 * `serviceMonitorSelector`: Auto-generating Prometheus configuration from `ServiceMonitor` objects. This means, that creating `ServiceMonitor` objects is not how a Prometheus instance is configured, but rather the raw configuration has to be written.
 * `alerting`: Alertmanager discovery as available in the Prometheus object is translated to the Prometheus configuration, meaning this configuration has to be done manually.
 * `scrapeInterval`
+* `scrapeTimeout`
 * `evaluationInterval`
 * `externalLabels`
 
-In order to enable to specify a custom configuration, the `serviceMonitorSelector` field has to be left empty. When the `serviceMonitorSelector` field is empty, the Prometheus Operator will not attempt to manage the `Secret`, that contains the Prometheus configuration. The `Secret`, that contains the Prometheus configuration is called `prometheus-<name-of-prometheus-object>`, in the same namespace as the Prometheus object. Within this `Secret`, the key that contains the Prometheus configuration is called `prometheus.yaml`.
+In order to enable to specify a custom configuration, specify neither `serviceMonitorSelector` nor `podMonitorSelector`. When these fields are empty, the Prometheus Operator will not attempt to manage the `Secret`, that contains the Prometheus configuration. The `Secret`, that contains the Prometheus configuration is called `prometheus-<name-of-prometheus-object>`, in the same namespace as the Prometheus object. Within this `Secret`, the key that contains the Prometheus configuration is called `prometheus.yaml.gz`.

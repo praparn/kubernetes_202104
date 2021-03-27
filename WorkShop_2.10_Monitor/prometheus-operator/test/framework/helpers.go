@@ -15,6 +15,7 @@
 package framework
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -27,14 +28,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/coreos/prometheus-operator/pkg/k8sutil"
 	"github.com/pkg/errors"
+	"github.com/prometheus-operator/prometheus-operator/pkg/k8sutil"
 )
 
 func PathToOSFile(relativPath string) (*os.File, error) {
 	path, err := filepath.Abs(relativPath)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("failed generate absolut file path of %s", relativPath))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed generate absolute file path of %s", relativPath))
 	}
 
 	manifest, err := os.Open(path)
@@ -49,7 +50,7 @@ func PathToOSFile(relativPath string) (*os.File, error) {
 // container to pass its readiness check.
 func WaitForPodsReady(kubeClient kubernetes.Interface, namespace string, timeout time.Duration, expectedReplicas int, opts metav1.ListOptions) error {
 	return wait.Poll(time.Second, timeout, func() (bool, error) {
-		pl, err := kubeClient.CoreV1().Pods(namespace).List(opts)
+		pl, err := kubeClient.CoreV1().Pods(namespace).List(context.TODO(), opts)
 		if err != nil {
 			return false, err
 		}
@@ -75,7 +76,7 @@ func WaitForPodsReady(kubeClient kubernetes.Interface, namespace string, timeout
 
 func WaitForPodsRunImage(kubeClient kubernetes.Interface, namespace string, expectedReplicas int, image string, opts metav1.ListOptions) error {
 	return wait.Poll(time.Second, time.Minute*5, func() (bool, error) {
-		pl, err := kubeClient.CoreV1().Pods(namespace).List(opts)
+		pl, err := kubeClient.CoreV1().Pods(namespace).List(context.TODO(), opts)
 		if err != nil {
 			return false, err
 		}
@@ -128,33 +129,12 @@ func GetLogs(kubeClient kubernetes.Interface, namespace string, podName, contain
 		Namespace(namespace).
 		Name(podName).SubResource("log").
 		Param("container", containerName).
-		Do().
+		Do(context.TODO()).
 		Raw()
 	if err != nil {
 		return "", err
 	}
 	return string(logs), err
-}
-
-func (f *Framework) Poll(timeout, pollInterval time.Duration, pollFunc func() (bool, error)) error {
-	t := time.After(timeout)
-	ticker := time.NewTicker(pollInterval)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-t:
-			return fmt.Errorf("timed out")
-		case <-ticker.C:
-			b, err := pollFunc()
-			if err != nil {
-				return err
-			}
-			if b {
-				return nil
-			}
-		}
-	}
 }
 
 func ProxyGetPod(kubeClient kubernetes.Interface, namespace, podName, path string) *rest.Request {

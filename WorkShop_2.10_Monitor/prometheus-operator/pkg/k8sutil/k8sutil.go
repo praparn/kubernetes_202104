@@ -15,54 +15,33 @@
 package k8sutil
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"strings"
-	"time"
 
-	crdutils "github.com/ant31/crd-validation/pkg"
-	monitoringv1 "github.com/coreos/prometheus-operator/pkg/apis/monitoring/v1"
-	version "github.com/hashicorp/go-version"
+	appsv1 "k8s.io/api/apps/v1"
+
+	"github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
-	"k8s.io/api/core/v1"
-	extensionsobj "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/validation"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
+	clientappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	clientv1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
+// KubeConfigEnv (optionally) specify the location of kubeconfig file
+const KubeConfigEnv = "KUBECONFIG"
+
 var invalidDNS1123Characters = regexp.MustCompile("[^-a-z0-9]+")
-
-// CustomResourceDefinitionTypeMeta set the default kind/apiversion of CRD
-var CustomResourceDefinitionTypeMeta metav1.TypeMeta = metav1.TypeMeta{
-	Kind:       "CustomResourceDefinition",
-	APIVersion: "apiextensions.k8s.io/v1beta1",
-}
-
-// WaitForCRDReady waits for a custom resource definition to be available for use.
-func WaitForCRDReady(listFunc func(opts metav1.ListOptions) (runtime.Object, error)) error {
-	err := wait.Poll(3*time.Second, 10*time.Minute, func() (bool, error) {
-		_, err := listFunc(metav1.ListOptions{})
-		if err != nil {
-			if se, ok := err.(*apierrors.StatusError); ok {
-				if se.Status().Code == http.StatusNotFound {
-					return false, nil
-				}
-			}
-			return false, errors.Wrap(err, "failed to list CRD")
-		}
-		return true, nil
-	})
-
-	return errors.Wrap(err, fmt.Sprintf("timed out waiting for Custom Resource"))
-}
 
 // PodRunningAndReady returns whether a pod is running and each container has
 // passed it's ready state.
@@ -86,23 +65,32 @@ func NewClusterConfig(host string, tlsInsecure bool, tlsConfig *rest.TLSClientCo
 	var cfg *rest.Config
 	var err error
 
-	if len(host) == 0 {
-		if cfg, err = rest.InClusterConfig(); err != nil {
-			return nil, err
+	kubeconfigFile := os.Getenv(KubeConfigEnv)
+	if kubeconfigFile != "" {
+		cfg, err = clientcmd.BuildConfigFromFlags("", kubeconfigFile)
+		if err != nil {
+			return nil, fmt.Errorf("error creating config from %s: %w", kubeconfigFile, err)
 		}
 	} else {
-		cfg = &rest.Config{
-			Host: host,
-		}
-		hostURL, err := url.Parse(host)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing host url %s : %v", host, err)
-		}
-		if hostURL.Scheme == "https" {
-			cfg.TLSClientConfig = *tlsConfig
-			cfg.Insecure = tlsInsecure
+		if len(host) == 0 {
+			if cfg, err = rest.InClusterConfig(); err != nil {
+				return nil, err
+			}
+		} else {
+			cfg = &rest.Config{
+				Host: host,
+			}
+			hostURL, err := url.Parse(host)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing host url %s: %w", host, err)
+			}
+			if hostURL.Scheme == "https" {
+				cfg.TLSClientConfig = *tlsConfig
+				cfg.Insecure = tlsInsecure
+			}
 		}
 	}
+
 	cfg.QPS = 100
 	cfg.Burst = 100
 
@@ -120,21 +108,24 @@ func IsResourceNotFoundError(err error) bool {
 	return false
 }
 
-func CreateOrUpdateService(sclient clientv1.ServiceInterface, svc *v1.Service) error {
-	service, err := sclient.Get(svc.Name, metav1.GetOptions{})
+func CreateOrUpdateService(ctx context.Context, sclient clientv1.ServiceInterface, svc *v1.Service) error {
+	service, err := sclient.Get(ctx, svc.Name, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return errors.Wrap(err, "retrieving service object failed")
 	}
 
 	if apierrors.IsNotFound(err) {
-		_, err = sclient.Create(svc)
+		_, err = sclient.Create(ctx, svc, metav1.CreateOptions{})
 		if err != nil {
 			return errors.Wrap(err, "creating service object failed")
 		}
 	} else {
 		svc.ResourceVersion = service.ResourceVersion
+		svc.Spec.IPFamilies = service.Spec.IPFamilies
 		svc.SetOwnerReferences(mergeOwnerReferences(service.GetOwnerReferences(), svc.GetOwnerReferences()))
-		_, err := sclient.Update(svc)
+		mergeMetadata(&svc.ObjectMeta, service.ObjectMeta)
+
+		_, err := sclient.Update(ctx, svc, metav1.UpdateOptions{})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return errors.Wrap(err, "updating service object failed")
 		}
@@ -143,23 +134,59 @@ func CreateOrUpdateService(sclient clientv1.ServiceInterface, svc *v1.Service) e
 	return nil
 }
 
-func CreateOrUpdateEndpoints(eclient clientv1.EndpointsInterface, eps *v1.Endpoints) error {
-	endpoints, err := eclient.Get(eps.Name, metav1.GetOptions{})
+func CreateOrUpdateEndpoints(ctx context.Context, eclient clientv1.EndpointsInterface, eps *v1.Endpoints) error {
+	endpoints, err := eclient.Get(ctx, eps.Name, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		return errors.Wrap(err, "retrieving existing kubelet endpoints object failed")
 	}
 
 	if apierrors.IsNotFound(err) {
-		_, err = eclient.Create(eps)
+		_, err = eclient.Create(ctx, eps, metav1.CreateOptions{})
 		if err != nil {
 			return errors.Wrap(err, "creating kubelet endpoints object failed")
 		}
 	} else {
 		eps.ResourceVersion = endpoints.ResourceVersion
-		_, err = eclient.Update(eps)
+		mergeMetadata(&eps.ObjectMeta, endpoints.ObjectMeta)
+
+		_, err = eclient.Update(ctx, eps, metav1.UpdateOptions{})
 		if err != nil {
 			return errors.Wrap(err, "updating kubelet endpoints object failed")
 		}
+	}
+
+	return nil
+}
+
+// UpdateStatefulSet merges metadata of existing StatefulSet with new one and updates it.
+func UpdateStatefulSet(ctx context.Context, sstClient clientappsv1.StatefulSetInterface, sset *appsv1.StatefulSet) error {
+	existingSset, err := sstClient.Get(ctx, sset.Name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrap(err, "getting stateful set object failed")
+	}
+
+	mergeMetadata(&sset.ObjectMeta, existingSset.ObjectMeta)
+
+	_, err = sstClient.Update(ctx, sset, metav1.UpdateOptions{})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateSecret merges metadata of existing Secret with new one and updates it.
+func UpdateSecret(ctx context.Context, secretClient clientv1.SecretInterface, secret *v1.Secret) error {
+	existingSecret, err := secretClient.Get(ctx, secret.Name, metav1.GetOptions{})
+	if err != nil {
+		return errors.Wrap(err, "getting secret object failed")
+	}
+
+	mergeMetadata(&secret.ObjectMeta, existingSecret.ObjectMeta)
+
+	_, err = secretClient.Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -178,20 +205,6 @@ func GetMinorVersion(dclient discovery.DiscoveryInterface) (int, error) {
 	}
 
 	return ver.Segments()[1], nil
-}
-
-func NewCustomResourceDefinition(crdKind monitoringv1.CrdKind, group string, labels map[string]string, validation bool) *extensionsobj.CustomResourceDefinition {
-	return crdutils.NewCustomResourceDefinition(crdutils.Config{
-		SpecDefinitionName:    crdKind.SpecName,
-		EnableValidation:      validation,
-		Labels:                crdutils.Labels{LabelsMap: labels},
-		ResourceScope:         string(extensionsobj.NamespaceScoped),
-		Group:                 group,
-		Kind:                  crdKind.Kind,
-		Version:               monitoringv1.Version,
-		Plural:                crdKind.Plural,
-		GetOpenAPIDefinitions: monitoringv1.GetOpenAPIDefinitions,
-	})
 }
 
 // SanitizeVolumeName ensures that the given volume name is a valid DNS-1123 label
@@ -214,6 +227,21 @@ func mergeOwnerReferences(old []metav1.OwnerReference, new []metav1.OwnerReferen
 		if _, ok := existing[ownerRef]; !ok {
 			old = append(old, ownerRef)
 		}
+	}
+	return old
+}
+
+func mergeMetadata(new *metav1.ObjectMeta, old metav1.ObjectMeta) {
+	new.SetLabels(mergeMaps(new.Labels, old.Labels))
+	new.SetAnnotations(mergeMaps(new.Annotations, old.Annotations))
+}
+
+func mergeMaps(new map[string]string, old map[string]string) map[string]string {
+	if old == nil {
+		old = make(map[string]string, len(new))
+	}
+	for k, v := range new {
+		old[k] = v
 	}
 	return old
 }

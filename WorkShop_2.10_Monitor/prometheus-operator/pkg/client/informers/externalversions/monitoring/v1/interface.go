@@ -1,4 +1,4 @@
-// Copyright 2018 The prometheus-operator Authors
+// Copyright The prometheus-operator Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,19 +17,25 @@
 package v1
 
 import (
-	internalinterfaces "github.com/coreos/prometheus-operator/pkg/client/informers/externalversions/internalinterfaces"
+	internalinterfaces "github.com/prometheus-operator/prometheus-operator/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
 	// Alertmanagers returns a AlertmanagerInformer.
 	Alertmanagers() AlertmanagerInformer
+	// PodMonitors returns a PodMonitorInformer.
+	PodMonitors() PodMonitorInformer
+	// Probes returns a ProbeInformer.
+	Probes() ProbeInformer
 	// Prometheuses returns a PrometheusInformer.
 	Prometheuses() PrometheusInformer
 	// PrometheusRules returns a PrometheusRuleInformer.
 	PrometheusRules() PrometheusRuleInformer
 	// ServiceMonitors returns a ServiceMonitorInformer.
 	ServiceMonitors() ServiceMonitorInformer
+	// ThanosRulers returns a ThanosRulerInformer.
+	ThanosRulers() ThanosRulerInformer
 }
 
 type version struct {
@@ -48,6 +54,16 @@ func (v *version) Alertmanagers() AlertmanagerInformer {
 	return &alertmanagerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
+// PodMonitors returns a PodMonitorInformer.
+func (v *version) PodMonitors() PodMonitorInformer {
+	return &podMonitorInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// Probes returns a ProbeInformer.
+func (v *version) Probes() ProbeInformer {
+	return &probeInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // Prometheuses returns a PrometheusInformer.
 func (v *version) Prometheuses() PrometheusInformer {
 	return &prometheusInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
@@ -61,4 +77,9 @@ func (v *version) PrometheusRules() PrometheusRuleInformer {
 // ServiceMonitors returns a ServiceMonitorInformer.
 func (v *version) ServiceMonitors() ServiceMonitorInformer {
 	return &serviceMonitorInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ThanosRulers returns a ThanosRulerInformer.
+func (v *version) ThanosRulers() ThanosRulerInformer {
+	return &thanosRulerInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

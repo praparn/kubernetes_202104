@@ -1,4 +1,4 @@
-// Copyright 2018 The prometheus-operator Authors
+// Copyright The prometheus-operator Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,22 @@ type AlertmanagerListerExpansion interface{}
 // AlertmanagerNamespaceLister.
 type AlertmanagerNamespaceListerExpansion interface{}
 
+// PodMonitorListerExpansion allows custom methods to be added to
+// PodMonitorLister.
+type PodMonitorListerExpansion interface{}
+
+// PodMonitorNamespaceListerExpansion allows custom methods to be added to
+// PodMonitorNamespaceLister.
+type PodMonitorNamespaceListerExpansion interface{}
+
+// ProbeListerExpansion allows custom methods to be added to
+// ProbeLister.
+type ProbeListerExpansion interface{}
+
+// ProbeNamespaceListerExpansion allows custom methods to be added to
+// ProbeNamespaceLister.
+type ProbeNamespaceListerExpansion interface{}
+
 // PrometheusListerExpansion allows custom methods to be added to
 // PrometheusLister.
 type PrometheusListerExpansion interface{}
@@ -47,3 +63,11 @@ type ServiceMonitorListerExpansion interface{}
 // ServiceMonitorNamespaceListerExpansion allows custom methods to be added to
 // ServiceMonitorNamespaceLister.
 type ServiceMonitorNamespaceListerExpansion interface{}
+
+// ThanosRulerListerExpansion allows custom methods to be added to
+// ThanosRulerLister.
+type ThanosRulerListerExpansion interface{}
+
+// ThanosRulerNamespaceListerExpansion allows custom methods to be added to
+// ThanosRulerNamespaceLister.
+type ThanosRulerNamespaceListerExpansion interface{}

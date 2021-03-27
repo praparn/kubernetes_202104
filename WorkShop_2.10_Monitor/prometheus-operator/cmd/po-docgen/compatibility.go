@@ -17,16 +17,23 @@ package main
 import (
 	"fmt"
 
-	"github.com/coreos/prometheus-operator/pkg/prometheus"
+	"github.com/prometheus-operator/prometheus-operator/pkg/operator"
 )
 
 func printCompatMatrixDocs() {
-	fmt.Println(`<br>
-<div class="alert alert-info" role="alert">
-    <i class="fa fa-exclamation-triangle"></i><b> Note:</b> Starting with v0.12.0, Prometheus Operator requires use of Kubernetes v1.7.x and up.
-</div>
-
-# Compatibility
+	fmt.Println(`---
+title: "Compatibility"
+description: "The Prometheus Operator supports a number of Kubernetes and Prometheus releases."
+lead: ""
+date: 2021-03-08T08:49:31+00:00
+draft: false
+images: []
+menu:
+  docs:
+    parent: "operator"
+weight: 200
+toc: true
+---
 
 The Prometheus Operator supports a number of Kubernetes and Prometheus releases.
 
@@ -36,12 +43,21 @@ The Prometheus Operator uses client-go to communicate with Kubernetes clusters. 
 
 Due to the use of CustomResourceDefinitions Kubernetes >= v1.7.0 is required.
 
+Due to the use of apiextensions.k8s.io/v1 CustomResourceDefinitions, prometheus-operator v0.39.0 onward requires Kubernetes >= v1.16.0.
+
 ## Prometheus
 
 The versions of Prometheus compatible to be run with the Prometheus Operator are:`)
 	fmt.Println("")
 
-	for _, v := range prometheus.CompatibilityMatrix {
+	for _, v := range operator.PrometheusCompatibilityMatrix {
 		fmt.Printf("* %s\n", v)
 	}
+
+	fmt.Println()
+
+	fmt.Println(`## Alertmanager
+
+We only support Alertmanager v0.15 and above. Everything below v0.15 is on a
+best effort basis.`)
 }
