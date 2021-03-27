@@ -37,7 +37,7 @@ kubectl get pv
 kubectl get pvc
 
 5. (Master) Check detail of PVC by command:
-kubectl describe pvc/aws-ebs-pvc 
+kubectl describe pvc/aws-ebs-pvc
 
 ===================================================
 Part 2: Integrate with Persistency Volume (PV),  and Persistency Volume Claim (PVC)
