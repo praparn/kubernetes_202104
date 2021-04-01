@@ -20,7 +20,7 @@ Part 1: Deploy grafana via helm:
    helm search repo grafana
 
 2. Install grafana helm by command
-   helm upgrade --install loki grafana/loki --set "service.type=NodePort"
+   helm install loki-grafana grafana/grafana --set "service.type=NodePort"
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Example Output:
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

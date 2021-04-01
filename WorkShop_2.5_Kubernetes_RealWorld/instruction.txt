@@ -89,11 +89,11 @@ tmux new -s Lab
 IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  ip-10-96-0-1.ap-southeast-1. sh
-  -> ip-10-0-1-248.ap-southeast-1 Masq    1      0          18        
-TCP  ip-10-96-0-10.ap-southeast-1 sh
-TCP  ip-10-96-0-10.ap-southeast-1 sh
-UDP  ip-10-96-0-10.ap-southeast-1 sh
+TCP  ip-10-96-0-1.ap-southeast-1. rr
+  -> ip-10-0-1-191.ap-southeast-1 Masq    1      0          6         
+TCP  ip-10-96-0-10.ap-southeast-1 rr
+TCP  ip-10-96-0-10.ap-southeast-1 rr
+UDP  ip-10-96-0-10.ap-southeast-1 rr
 	-------------------------------------------------
 
 9. (Master) Create calico net plugin for network for cluster by command:
@@ -173,23 +173,24 @@ watch kubectl get pods --all-namespaces
 	Example Result:
 	-------------------------------------------------
 IP Virtual Server version 1.2.1 (size=4096)
+IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
   -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
-TCP  ip-10-96-0-1.ap-southeast-1. sh
-  -> ip-10-0-1-248.ap-southeast-1 Masq    1      3          1         
-TCP  ip-10-96-0-10.ap-southeast-1 sh
-  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
-  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
-TCP  ip-10-96-0-10.ap-southeast-1 sh
-  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
-  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
-TCP  ip-10-99-229-155.ap-southeas sh
-  -> ip-192-168-99-5.ap-southeast Masq    1      0          0         
-TCP  ip-10-107-135-77.ap-southeas sh
-  -> ip-192-168-99-4.ap-southeast Masq    1      0          0         
-UDP  ip-10-96-0-10.ap-southeast-1 sh
-  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
-  -> ip-192-168-99-3.ap-southeast Masq    1      0          0
+TCP  ip-10-96-0-1.ap-southeast-1. rr
+  -> ip-10-0-1-191.ap-southeast-1 Masq    1      3          0         
+TCP  ip-10-96-0-10.ap-southeast-1 rr
+  -> ip-192-168-221-2.ap-southeas Masq    1      0          0         
+  -> ip-192-168-221-3.ap-southeas Masq    1      0          0         
+TCP  ip-10-96-0-10.ap-southeast-1 rr
+  -> ip-192-168-221-2.ap-southeas Masq    1      0          0         
+  -> ip-192-168-221-3.ap-southeas Masq    1      0          0         
+TCP  ip-10-98-203-179.ap-southeas rr
+  -> ip-192-168-221-4.ap-southeas Masq    1      0          0         
+TCP  ip-10-109-146-178.ap-southea rr
+  -> ip-192-168-221-5.ap-southeas Masq    1      0          0         
+UDP  ip-10-96-0-10.ap-southeast-1 rr
+  -> ip-192-168-221-2.ap-southeas Masq    1      0          0         
+  -> ip-192-168-221-3.ap-southeas Masq    1      0          0 
 	-------------------------------------------------
 
 22 (Worker2) Check IPVS policy by ipvsadm
@@ -198,22 +199,24 @@ UDP  ip-10-96-0-10.ap-southeast-1 sh
 	Example Result:
 	-------------------------------------------------
 IP Virtual Server version 1.2.1 (size=4096)
+IP Virtual Server version 1.2.1 (size=4096)
 Prot LocalAddress:Port Scheduler Flags
-TCP  ip-10-96-0-1.ap-southeast-1. sh
-  -> ip-10-0-1-248.ap-southeast-1 Masq    1      3          1         
-TCP  ip-10-96-0-10.ap-southeast-1 sh
-  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
-  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
-TCP  ip-10-96-0-10.ap-southeast-1 sh
-  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
-  -> ip-192-168-99-3.ap-southeast Masq    1      0          0         
-TCP  ip-10-99-229-155.ap-southeas sh
-  -> ip-192-168-99-5.ap-southeast Masq    1      0          0         
-TCP  ip-10-107-135-77.ap-southeas sh
-  -> ip-192-168-99-4.ap-southeast Masq    1      0          0         
-UDP  ip-10-96-0-10.ap-southeast-1 sh
-  -> ip-192-168-99-2.ap-southeast Masq    1      0          0         
-  -> ip-192-168-99-3.ap-southeast Masq    1      0          0
+  -> RemoteAddress:Port           Forward Weight ActiveConn InActConn
+TCP  ip-10-96-0-1.ap-southeast-1. rr
+  -> ip-10-0-1-191.ap-southeast-1 Masq    1      3          0         
+TCP  ip-10-96-0-10.ap-southeast-1 rr
+  -> ip-192-168-221-2.ap-southeas Masq    1      0          0         
+  -> ip-192-168-221-3.ap-southeas Masq    1      0          0         
+TCP  ip-10-96-0-10.ap-southeast-1 rr
+  -> ip-192-168-221-2.ap-southeas Masq    1      0          0         
+  -> ip-192-168-221-3.ap-southeas Masq    1      0          0         
+TCP  ip-10-98-203-179.ap-southeas rr
+  -> ip-192-168-221-4.ap-southeas Masq    1      0          0         
+TCP  ip-10-109-146-178.ap-southea rr
+  -> ip-192-168-221-5.ap-southeas Masq    1      0          0         
+UDP  ip-10-96-0-10.ap-southeast-1 rr
+  -> ip-192-168-221-2.ap-southeas Masq    1      0          0         
+  -> ip-192-168-221-3.ap-southeas Masq    1      0          0 
 	-------------------------------------------------
 
 23. (Master) Test deployment basic nginx pods by command
@@ -275,8 +278,8 @@ ingress-nginx-controller-admission   ClusterIP      10.97.28.203   <none>       
 ========================================
 
     27.4 Wait (5 - 10 min) for NLB operate done and check response by command:
-	watch -n 10 curl http://<CNAME of NLB>
-	watch -n 10 curl https://<CNAME of NLB> -k
+	curl http://<CNAME of NLB>
+	curl https://<CNAME of NLB> -k
 
 
 28. (Master) Test deploy ingress service
